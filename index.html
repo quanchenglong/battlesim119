@@ -1954,6 +1954,14 @@
                     applyJobEquipmentStats(char);
                 }
             });
+            
+            // 更新最终属性面板
+            updateFinalAttributesPanel();
+            
+            // 更新所有关卡的伤害信息（因为装备属性已改变）
+            for (let stage = 1; stage <= 20; stage++) {
+                updateStageDamageInfo(stage);
+            }
         }
 
         // 应用职业装备属性
@@ -2881,6 +2889,11 @@
                 }
                 // 更新最终属性面板
                 updateFinalAttributesPanel();
+                
+                // 更新所有关卡的伤害信息（因为角色属性已改变）
+                for (let stage = 1; stage <= 20; stage++) {
+                    updateStageDamageInfo(stage);
+                }
             }
         }
 
@@ -2925,6 +2938,11 @@
             monsterConfig.atkSpeed = parseFloat(document.getElementById('monsterAtkSpeed').value) || 1;
             monsterConfig.damageCoeff = parseFloat(document.getElementById('monsterDamageCoeff').value) || 1;
             monsterConfig.hpCoeff = parseFloat(document.getElementById('monsterHpCoeff').value) || 0;
+            
+            // 更新所有关卡的伤害信息（因为怪物配置已改变）
+            for (let stage = 1; stage <= 20; stage++) {
+                updateStageDamageInfo(stage);
+            }
         }
 
         // 重置配置
