@@ -707,6 +707,27 @@
 
         <div class="scheme-manager">
             <div class="section-title">💾 方案管理（最多10个方案）</div>
+            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                <div style="font-weight: 600; color: #856404; margin-bottom: 10px;">☁️ 共享存储配置（所有人共享数据）</div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="sharedGistId" placeholder="输入GitHub Gist ID（留空则仅本地存储）" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                    <button class="btn btn-primary" onclick="saveSharedGistId()" style="padding: 8px 16px; font-size: 0.9em;">保存Gist ID</button>
+                </div>
+                <div style="font-size: 0.85em; color: #856404; margin-bottom: 8px;">
+                    <div>📝 使用说明：</div>
+                    <div style="margin-left: 15px; margin-top: 5px;">
+                        1. 创建GitHub Gist：访问 <a href="https://gist.github.com" target="_blank" style="color: #667eea;">gist.github.com</a>，创建公开Gist<br/>
+                        2. 复制Gist ID（URL中的32位字符，如：abc123def456...）<br/>
+                        3. 粘贴到上方输入框并保存<br/>
+                        4. 所有人使用同一个Gist ID即可共享数据
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-success" onclick="syncFromShared()" style="padding: 8px 16px; font-size: 0.9em; background: #51cf66;">🔄 从共享存储同步</button>
+                    <button class="btn btn-info" onclick="syncToShared()" style="padding: 8px 16px; font-size: 0.9em; background: #17a2b8;">📤 上传到共享存储</button>
+                    <span id="sharedStorageStatus" style="color: #666; font-size: 0.85em; line-height: 32px; margin-left: 10px;"></span>
+                </div>
+            </div>
             <div class="scheme-controls">
                 <input type="text" class="scheme-input" id="schemeNameInput" placeholder="输入方案名称..." maxlength="20" />
                 <button class="btn btn-primary" onclick="saveScheme()" style="padding: 8px 20px; flex: 0;">保存方案</button>
@@ -4037,6 +4058,193 @@
         const STORAGE_KEY = 'battleSimulatorSchemes';
         const MAX_SCHEMES = 10;
         let currentSchemeId = null;
+        
+        // 共享存储配置
+        const SHARED_GIST_ID_KEY = 'battleSimulatorSharedGistId';
+        let sharedGistId = null;
+        
+        // 加载共享Gist ID
+        function loadSharedGistId() {
+            const saved = localStorage.getItem(SHARED_GIST_ID_KEY);
+            if (saved) {
+                sharedGistId = saved;
+                document.getElementById('sharedGistId').value = sharedGistId;
+            }
+        }
+        
+        // 保存共享Gist ID
+        window.saveSharedGistId = function() {
+            const gistId = document.getElementById('sharedGistId').value.trim();
+            if (gistId) {
+                sharedGistId = gistId;
+                localStorage.setItem(SHARED_GIST_ID_KEY, gistId);
+                showMessage('Gist ID已保存', 'success');
+                updateSharedStorageStatus('已配置共享存储');
+            } else {
+                sharedGistId = null;
+                localStorage.removeItem(SHARED_GIST_ID_KEY);
+                showMessage('已清除Gist ID，将仅使用本地存储', 'info');
+                updateSharedStorageStatus('未配置共享存储');
+            }
+        };
+        
+        // 更新共享存储状态显示
+        function updateSharedStorageStatus(message) {
+            const statusEl = document.getElementById('sharedStorageStatus');
+            if (statusEl) {
+                statusEl.textContent = message;
+            }
+        }
+        
+        // 从GitHub Gist读取数据
+        async function readFromGist(gistId) {
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`);
+                if (!response.ok) {
+                    throw new Error('无法访问Gist，请检查Gist ID是否正确，且Gist为公开状态');
+                }
+                const gist = await response.json();
+                
+                // 查找数据文件（通常命名为 data.json）
+                const files = Object.keys(gist.files);
+                let dataFile = files.find(f => f.includes('data') || f.includes('json'));
+                if (!dataFile && files.length > 0) {
+                    dataFile = files[0]; // 使用第一个文件
+                }
+                
+                if (!dataFile) {
+                    throw new Error('Gist中没有找到数据文件');
+                }
+                
+                const content = gist.files[dataFile].content;
+                return JSON.parse(content);
+            } catch (error) {
+                console.error('读取Gist失败:', error);
+                throw error;
+            }
+        }
+        
+        // 写入数据到GitHub Gist（需要Personal Access Token）
+        async function writeToGist(gistId, data, token) {
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'battle-simulator-data.json': {
+                                content: JSON.stringify(data, null, 2)
+                            }
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '写入Gist失败');
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('写入Gist失败:', error);
+                throw error;
+            }
+        }
+        
+        // 从共享存储同步数据
+        window.syncFromShared = async function() {
+            if (!sharedGistId) {
+                showMessage('请先配置Gist ID', 'error');
+                return;
+            }
+            
+            updateSharedStorageStatus('正在同步...');
+            try {
+                const sharedData = await readFromGist(sharedGistId);
+                
+                // 同步装备表
+                if (sharedData.equipmentTable && Array.isArray(sharedData.equipmentTable)) {
+                    equipmentTable = sharedData.equipmentTable;
+                    localStorage.setItem(EQUIPMENT_STORAGE_KEY, JSON.stringify(equipmentTable));
+                    updateEquipmentTableInfo();
+                    updateJobEquipmentPanel();
+                    console.log('已同步装备表，共', equipmentTable.length, '件');
+                }
+                
+                // 同步英雄表
+                if (sharedData.heroTable && Array.isArray(sharedData.heroTable)) {
+                    heroTable = sharedData.heroTable;
+                    localStorage.setItem(HERO_STORAGE_KEY, JSON.stringify(heroTable));
+                    updateHeroTableInfo();
+                    updateHeroSelect();
+                    console.log('已同步英雄表，共', heroTable.length, '个');
+                }
+                
+                // 同步怪物表
+                if (sharedData.monsterTable && Array.isArray(sharedData.monsterTable)) {
+                    monsterTable = sharedData.monsterTable;
+                    localStorage.setItem(MONSTER_STORAGE_KEY, JSON.stringify(monsterTable));
+                    updateMonsterTableInfo();
+                    updateMonsterSelect();
+                    updateStageMonsterSelects();
+                    console.log('已同步怪物表，共', monsterTable.length, '个');
+                }
+                
+                // 同步方案
+                if (sharedData.schemes && Array.isArray(sharedData.schemes)) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(sharedData.schemes));
+                    renderSchemes();
+                    console.log('已同步方案，共', sharedData.schemes.length, '个');
+                }
+                
+                showMessage('同步成功！已从共享存储加载所有数据', 'success');
+                updateSharedStorageStatus('同步完成');
+            } catch (error) {
+                showMessage('同步失败：' + error.message, 'error');
+                updateSharedStorageStatus('同步失败');
+            }
+        };
+        
+        // 上传数据到共享存储
+        window.syncToShared = async function() {
+            if (!sharedGistId) {
+                showMessage('请先配置Gist ID', 'error');
+                return;
+            }
+            
+            // 提示需要Personal Access Token
+            const token = prompt('请输入GitHub Personal Access Token（需要repo权限）：\n\n创建Token：https://github.com/settings/tokens\n\n如果不想使用Token，可以手动复制数据到Gist');
+            
+            if (!token) {
+                showMessage('已取消上传', 'info');
+                return;
+            }
+            
+            updateSharedStorageStatus('正在上传...');
+            try {
+                // 收集所有数据
+                const sharedData = {
+                    equipmentTable: equipmentTable,
+                    heroTable: heroTable,
+                    monsterTable: monsterTable,
+                    schemes: loadSchemes(),
+                    lastUpdate: new Date().toISOString(),
+                    version: VERSION
+                };
+                
+                await writeToGist(sharedGistId, sharedData, token);
+                
+                showMessage('上传成功！所有数据已保存到共享存储', 'success');
+                updateSharedStorageStatus('上传完成');
+            } catch (error) {
+                showMessage('上传失败：' + error.message, 'error');
+                updateSharedStorageStatus('上传失败');
+            }
+        };
 
         // 保存方案（全局函数）
         window.saveScheme = function() {
@@ -4786,14 +4994,29 @@
                 return;
             }
 
+            // 加载共享Gist ID配置
+            loadSharedGistId();
+            
             // 初始化角色界面
             initCharacters();
             
-            // 加载保存的数据
+            // 加载保存的数据（先从本地加载，然后尝试从共享存储同步）
             loadSavedCharacterEquipment();
             loadSavedEquipmentTable();
             loadSavedHeroTable();
             loadSavedMonsterTable();
+            
+            // 如果配置了共享存储，自动尝试同步（静默，不显示错误）
+            if (sharedGistId) {
+                updateSharedStorageStatus('已配置，点击同步按钮加载共享数据');
+                // 可选：自动同步（取消注释下面的代码）
+                // syncFromShared().catch(() => {
+                //     // 静默失败，使用本地数据
+                //     console.log('自动同步失败，使用本地数据');
+                // });
+            } else {
+                updateSharedStorageStatus('未配置共享存储');
+            }
             
             // 初始化时应用装备属性
             characters.forEach(char => {
