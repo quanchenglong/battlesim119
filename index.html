@@ -2020,6 +2020,9 @@
             characterEquipment[jobId][type] = equipmentId || null;
             saveCharacterEquipment();
             
+            // 更新职业装备面板（刷新总加成显示）
+            updateJobEquipmentPanel();
+            
             // 更新所有该职业的角色属性
             characters.forEach(char => {
                 if (char.job == jobId) {
@@ -2930,6 +2933,11 @@
             
             // 更新最终属性面板
             updateFinalAttributesPanel();
+            
+            // 更新所有关卡的伤害信息（因为角色属性已改变）
+            for (let stage = 1; stage <= 20; stage++) {
+                updateStageDamageInfo(stage);
+            }
         }
 
         // 更新角色属性
