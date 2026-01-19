@@ -433,6 +433,52 @@
             border-radius: 12px;
         }
 
+        /* 标签页样式 */
+        .tab-container {
+            margin-bottom: 30px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 2px;
+        }
+
+        .tab-button:hover {
+            color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .scheme-controls {
             display: flex;
             gap: 10px;
@@ -534,44 +580,86 @@
             <div class="version">v<span id="version">1.0.0</span></div>
         </div>
 
-        <div class="scheme-manager">
-            <div class="section-title">📦 装备表管理</div>
-            <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="file" id="equipmentFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadEquipmentTable(event)" />
-                    <button class="btn btn-primary" onclick="document.getElementById('equipmentFileInput').click()" style="padding: 8px 20px;">上传装备表</button>
-                    <span id="equipmentTableStatus" style="color: #666; font-size: 0.9em;">未加载装备表</span>
-                </div>
-                <div id="equipmentTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+        <!-- 标签页容器 -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('main')">⚙️ 主配置</button>
+                <button class="tab-button" onclick="switchTab('data')">📊 数据表导入</button>
+                <button class="tab-button" onclick="switchTab('import')">💾 方案导入</button>
             </div>
-        </div>
 
-        <div class="scheme-manager">
-            <div class="section-title">🦸 英雄表管理</div>
-            <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="file" id="heroFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadHeroTable(event)" />
-                    <button class="btn btn-primary" onclick="document.getElementById('heroFileInput').click()" style="padding: 8px 20px;">上传英雄表</button>
-                    <span id="heroTableStatus" style="color: #666; font-size: 0.9em;">未加载英雄表</span>
-                </div>
-                <div id="heroTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+            <!-- 主配置标签页 -->
+            <div id="tab-main" class="tab-content active">
+                <!-- 主配置内容将显示在这里 -->
             </div>
-        </div>
 
-        <div class="scheme-manager">
-            <div class="section-title">👹 怪物表管理</div>
-            <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="file" id="monsterFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadMonsterTable(event)" />
-                    <button class="btn btn-primary" onclick="document.getElementById('monsterFileInput').click()" style="padding: 8px 20px;">上传怪物表</button>
-                    <span id="monsterTableStatus" style="color: #666; font-size: 0.9em;">未加载怪物表</span>
+            <!-- 方案导入标签页 -->
+            <div id="tab-import" class="tab-content">
+                <div class="scheme-manager">
+                    <div class="section-title">☁️ 共享存储配置（所有人共享数据）</div>
+                    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <input type="text" id="sharedGistId" placeholder="输入GitHub Gist ID（留空则仅本地存储）" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                            <button class="btn btn-primary" onclick="saveSharedGistId()" style="padding: 8px 16px; font-size: 0.9em;">保存Gist ID</button>
+                        </div>
+                        <div style="font-size: 0.85em; color: #856404; margin-bottom: 8px;">
+                            <div>📝 使用说明：</div>
+                            <div style="margin-left: 15px; margin-top: 5px;">
+                                1. 创建GitHub Gist：访问 <a href="https://gist.github.com" target="_blank" style="color: #667eea;">gist.github.com</a>，创建公开Gist<br/>
+                                2. 复制Gist ID（URL中的32位字符，如：abc123def456...）<br/>
+                                3. 粘贴到上方输入框并保存<br/>
+                                4. 所有人使用同一个Gist ID即可共享数据
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-success" onclick="syncFromShared()" style="padding: 8px 16px; font-size: 0.9em; background: #51cf66;">🔄 从共享存储同步</button>
+                            <button class="btn btn-info" onclick="syncToShared()" style="padding: 8px 16px; font-size: 0.9em; background: #17a2b8;">📤 上传到共享存储</button>
+                            <span id="sharedStorageStatus" style="color: #666; font-size: 0.85em; line-height: 32px; margin-left: 10px;"></span>
+                        </div>
+                    </div>
                 </div>
-                <div id="monsterTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
             </div>
-        </div>
 
-        <div class="config-section">
-            <div class="section-title">🔍 英雄属性查看</div>
+            <!-- 数据表导入标签页 -->
+            <div id="tab-data" class="tab-content">
+                <div class="scheme-manager">
+                    <div class="section-title">📦 装备表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="equipmentFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadEquipmentTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('equipmentFileInput').click()" style="padding: 8px 20px;">上传装备表</button>
+                            <span id="equipmentTableStatus" style="color: #666; font-size: 0.9em;">未加载装备表</span>
+                        </div>
+                        <div id="equipmentTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
+                    <div class="section-title">🦸 英雄表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="heroFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadHeroTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('heroFileInput').click()" style="padding: 8px 20px;">上传英雄表</button>
+                            <span id="heroTableStatus" style="color: #666; font-size: 0.9em;">未加载英雄表</span>
+                        </div>
+                        <div id="heroTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
+                    <div class="section-title">👹 怪物表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="monsterFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadMonsterTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('monsterFileInput').click()" style="padding: 8px 20px;">上传怪物表</button>
+                            <span id="monsterTableStatus" style="color: #666; font-size: 0.9em;">未加载怪物表</span>
+                        </div>
+                        <div id="monsterTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">🔍 英雄属性查看</div>
             <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <div class="input-group">
@@ -608,36 +696,57 @@
             </div>
         </div>
 
-        <div class="config-section">
-            <div class="section-title">👹 怪物属性查看</div>
-            <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div class="input-group">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px;">选择怪物</label>
-                        <select id="monsterSelect" onchange="updateMonsterAttributes()" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;">
-                            <option value="">请先上传怪物表</option>
-                        </select>
+                <div class="config-section">
+                    <div class="section-title">👹 怪物属性查看</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                            <div class="input-group">
+                                <label style="font-weight: 600; color: #333; margin-bottom: 8px;">选择怪物</label>
+                                <select id="monsterSelect" onchange="updateMonsterAttributes()" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;">
+                                    <option value="">请先上传怪物表</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="monsterAttributesDisplay" style="background: white; border-radius: 8px; padding: 20px; border: 2px solid #e0e0e0; display: none;">
+                            <div style="font-size: 1.1em; font-weight: 600; color: #667eea; margin-bottom: 15px;" id="monsterDisplayName"></div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
+                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">攻击力</div>
+                                    <div style="font-size: 1.3em; font-weight: 600; color: #f44336;" id="monsterAttrAttack">-</div>
+                                </div>
+                                <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
+                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">防御力</div>
+                                    <div style="font-size: 1.3em; font-weight: 600; color: #2196F3;" id="monsterAttrDefense">-</div>
+                                </div>
+                                <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
+                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">生命值</div>
+                                    <div style="font-size: 1.3em; font-weight: 600; color: #4CAF50;" id="monsterAttrHp">-</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 0.85em; color: #666;" id="monsterAttrInfo"></div>
+                        </div>
                     </div>
-                </div>
-                <div id="monsterAttributesDisplay" style="background: white; border-radius: 8px; padding: 20px; border: 2px solid #e0e0e0; display: none;">
-                    <div style="font-size: 1.1em; font-weight: 600; color: #667eea; margin-bottom: 15px;" id="monsterDisplayName"></div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
-                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">攻击力</div>
-                            <div style="font-size: 1.3em; font-weight: 600; color: #f44336;" id="monsterAttrAttack">-</div>
-                        </div>
-                        <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
-                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">防御力</div>
-                            <div style="font-size: 1.3em; font-weight: 600; color: #2196F3;" id="monsterAttrDefense">-</div>
-                        </div>
-                        <div style="padding: 12px; background: #f8f9ff; border-radius: 6px;">
-                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">生命值</div>
-                            <div style="font-size: 1.3em; font-weight: 600; color: #4CAF50;" id="monsterAttrHp">-</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 0.85em; color: #666;" id="monsterAttrInfo"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- 主配置内容 -->
+        <div id="main-content">
+        <div class="scheme-manager">
+            <div class="section-title">💾 方案管理（最多10个方案）</div>
+            <div class="scheme-controls">
+                <input type="text" class="scheme-input" id="schemeNameInput" placeholder="输入方案名称..." maxlength="20" />
+                <button class="btn btn-primary" onclick="saveScheme()" style="padding: 8px 20px; flex: 0;">保存方案</button>
+                <button class="btn btn-secondary" onclick="newScheme()" style="padding: 8px 20px; flex: 0;">新建方案</button>
+                <button class="btn btn-secondary" onclick="clearCurrentScheme()" style="padding: 8px 20px; flex: 0;">清空配置</button>
+            </div>
+            <div class="scheme-list" id="schemeList"></div>
+            <div class="scheme-warning" id="schemeWarning"></div>
+        </div>
+
+        <div class="config-section">
+            <div class="section-title">👥 角色基础属性配置（5个角色）</div>
+            <div class="characters-grid" id="charactersGrid"></div>
         </div>
 
         <div class="config-section">
@@ -703,44 +812,6 @@
                     <div>当前车辆加成：攻击 +0，防御 +0，生命 +0</div>
                 </div>
             </div>
-        </div>
-
-        <div class="scheme-manager">
-            <div class="section-title">💾 方案管理（最多10个方案）</div>
-            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                <div style="font-weight: 600; color: #856404; margin-bottom: 10px;">☁️ 共享存储配置（所有人共享数据）</div>
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px;">
-                    <input type="text" id="sharedGistId" placeholder="输入GitHub Gist ID（留空则仅本地存储）" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
-                    <button class="btn btn-primary" onclick="saveSharedGistId()" style="padding: 8px 16px; font-size: 0.9em;">保存Gist ID</button>
-                </div>
-                <div style="font-size: 0.85em; color: #856404; margin-bottom: 8px;">
-                    <div>📝 使用说明：</div>
-                    <div style="margin-left: 15px; margin-top: 5px;">
-                        1. 创建GitHub Gist：访问 <a href="https://gist.github.com" target="_blank" style="color: #667eea;">gist.github.com</a>，创建公开Gist<br/>
-                        2. 复制Gist ID（URL中的32位字符，如：abc123def456...）<br/>
-                        3. 粘贴到上方输入框并保存<br/>
-                        4. 所有人使用同一个Gist ID即可共享数据
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn btn-success" onclick="syncFromShared()" style="padding: 8px 16px; font-size: 0.9em; background: #51cf66;">🔄 从共享存储同步</button>
-                    <button class="btn btn-info" onclick="syncToShared()" style="padding: 8px 16px; font-size: 0.9em; background: #17a2b8;">📤 上传到共享存储</button>
-                    <span id="sharedStorageStatus" style="color: #666; font-size: 0.85em; line-height: 32px; margin-left: 10px;"></span>
-                </div>
-            </div>
-            <div class="scheme-controls">
-                <input type="text" class="scheme-input" id="schemeNameInput" placeholder="输入方案名称..." maxlength="20" />
-                <button class="btn btn-primary" onclick="saveScheme()" style="padding: 8px 20px; flex: 0;">保存方案</button>
-                <button class="btn btn-secondary" onclick="newScheme()" style="padding: 8px 20px; flex: 0;">新建方案</button>
-                <button class="btn btn-secondary" onclick="clearCurrentScheme()" style="padding: 8px 20px; flex: 0;">清空配置</button>
-            </div>
-            <div class="scheme-list" id="schemeList"></div>
-            <div class="scheme-warning" id="schemeWarning"></div>
-        </div>
-
-        <div class="config-section">
-            <div class="section-title">👥 角色基础属性配置（5个角色）</div>
-            <div class="characters-grid" id="charactersGrid"></div>
         </div>
 
         <div class="config-section">
@@ -814,6 +885,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         <div class="control-panel">
@@ -4072,6 +4144,42 @@
             document.getElementById('message').classList.remove('show');
         }
 
+        // 标签页切换功能
+        window.switchTab = function(tabName) {
+            // 隐藏所有标签页内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有按钮的active状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的标签页
+            const targetTab = document.getElementById(`tab-${tabName}`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // 激活对应的按钮
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach((btn, index) => {
+                if ((tabName === 'main' && index === 0) || (tabName === 'data' && index === 1) || (tabName === 'import' && index === 2)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 如果是主配置标签页，需要将主配置内容移到标签页内
+            if (tabName === 'main') {
+                const mainContent = document.getElementById('main-content');
+                const mainTab = document.getElementById('tab-main');
+                if (mainContent && mainTab && !mainTab.contains(mainContent)) {
+                    mainTab.appendChild(mainContent);
+                }
+            }
+        };
+
         // 方案管理
         const STORAGE_KEY = 'battleSimulatorSchemes';
         const MAX_SCHEMES = 10;
@@ -5014,6 +5122,13 @@
 
             // 加载共享Gist ID配置
             loadSharedGistId();
+            
+            // 初始化标签页：将主配置内容移到主配置标签页
+            const mainContent = document.getElementById('main-content');
+            const mainTab = document.getElementById('tab-main');
+            if (mainContent && mainTab) {
+                mainTab.appendChild(mainContent);
+            }
             
             // 初始化角色界面
             initCharacters();
