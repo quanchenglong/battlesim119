@@ -5800,14 +5800,16 @@
             const now = Date.now();
             waveBattleState.elapsedTime = (now - waveBattleState.startTime) / 1000;
 
-            // 检查是否需要开始下一波（当前波次怪物出完即可开始下一波，无需等待怪物全部死亡）
+            // 检查是否需要开始下一波
+            // 需求：当前波怪物刷完后，不用等全部死亡就可以刷新下一波
+            // 为避免因浮点误差导致“刷怪数未完全达到理论总数而卡死”，这里使用“持续时间到 或 刷怪数达到总数”任一条件即可推进下一波
             if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
                 const waveData = battleWaveData[waveBattleState.currentWave];
                 if (waveData) {
                     const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
                     
-                    // 如果当前波次持续时间已到且怪物已出完，立即开始下一波
-                    if (waveElapsedTime >= waveData.duration && 
+                    // 如果当前波次持续时间已到，或怪物已按配置刷完，则立即开始下一波
+                    if (waveElapsedTime >= waveData.duration ||
                         waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount) {
                         addLog(`<span style="color: #51cf66;">第 ${waveBattleState.currentWave} 波完成！开始下一波...</span>`);
                         startNextWave();
