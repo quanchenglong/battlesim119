@@ -5863,26 +5863,54 @@
             if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
                 const waveData = battleWaveData[waveBattleState.currentWave];
                 if (waveData) {
-                    // 计算自上次检查以来的时间差（秒）
-                    const deltaTime = (now - waveBattleState.lastSpawnCheckTime) / 1000;
-                    waveBattleState.lastSpawnCheckTime = now;
-                    
-                    // 累计怪物数量（每秒spawnRate只）
-                    waveBattleState.spawnAccumulator += waveData.spawnRate * deltaTime;
-                    
-                    // 当累计值>=1时，生成怪物
-                    let spawnedThisTick = 0;
-                    const spawnTimeSec = Math.floor(waveBattleState.elapsedTime);
-                    while (waveBattleState.spawnAccumulator >= 1.0) {
-                        spawnWaveMonster(spawnTimeSec);
-                        waveBattleState.spawnAccumulator -= 1.0; // 减去1只
-                        spawnedThisTick++;
-                    }
+                    // 检查是否超过持续时间（防止在波次结束后继续生成）
+                    const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+                    if (waveElapsedTime >= waveData.duration) {
+                        // 波次持续时间已到，不再生成新怪物
+                        waveBattleState.lastSpawnCheckTime = now; // 更新时间，避免累计值异常增长
+                    } else {
+                        // 计算自上次检查以来的时间差（秒）
+                        let deltaTime = (now - waveBattleState.lastSpawnCheckTime) / 1000;
+                        
+                        // 保护措施：限制deltaTime的最大值，避免因循环暂停导致大量怪物生成
+                        // 最大允许1秒的时间差（正常情况下每帧间隔很短）
+                        if (deltaTime > 1.0) {
+                            console.warn(`检测到异常大的时间差: ${deltaTime.toFixed(2)}秒，已限制为1秒`);
+                            deltaTime = 1.0;
+                        }
+                        
+                        // 确保lastSpawnCheckTime不为null
+                        if (!waveBattleState.lastSpawnCheckTime) {
+                            waveBattleState.lastSpawnCheckTime = now;
+                            deltaTime = 0;
+                        }
+                        
+                        waveBattleState.lastSpawnCheckTime = now;
+                        
+                        // 累计怪物数量（每秒spawnRate只）
+                        waveBattleState.spawnAccumulator += waveData.spawnRate * deltaTime;
+                        
+                        // 当累计值>=1时，生成怪物（但不超过当前波次应该生成的总数）
+                        let spawnedThisTick = 0;
+                        const spawnTimeSec = Math.floor(waveBattleState.elapsedTime);
+                        while (waveBattleState.spawnAccumulator >= 1.0 && 
+                               waveBattleState.waveSpawnedCount < waveBattleState.waveTotalCount) {
+                            spawnWaveMonster(spawnTimeSec);
+                            waveBattleState.spawnAccumulator -= 1.0; // 减去1只
+                            spawnedThisTick++;
+                            
+                            // 额外保护：如果已经达到总数，清零累计值，避免继续生成
+                            if (waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount) {
+                                waveBattleState.spawnAccumulator = 0;
+                                break;
+                            }
+                        }
 
-                    // 本帧如果生成了怪物，统一刷新一次，确保同时出现
-                    if (spawnedThisTick > 0) {
-                        updateWaveBattleInfo();
-                        updateBattleScene();
+                        // 本帧如果生成了怪物，统一刷新一次，确保同时出现
+                        if (spawnedThisTick > 0) {
+                            updateWaveBattleInfo();
+                            updateBattleScene();
+                        }
                     }
                 }
             }
