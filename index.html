@@ -584,6 +584,7 @@
         <div class="tab-container">
             <div class="tab-buttons">
                 <button class="tab-button active" onclick="switchTab('main')">⚙️ 主配置</button>
+                <button class="tab-button" onclick="switchTab('battle')">⚔️ 局内战斗模拟</button>
                 <button class="tab-button" onclick="switchTab('data')">📊 数据表导入</button>
                 <button class="tab-button" onclick="switchTab('import')">💾 方案导入</button>
             </div>
@@ -591,6 +592,15 @@
             <!-- 主配置标签页 -->
             <div id="tab-main" class="tab-content active">
                 <!-- 主配置内容将显示在这里 -->
+            </div>
+
+            <!-- 局内战斗模拟标签页 -->
+            <div id="tab-battle" class="tab-content">
+                <div class="config-section">
+                    <div class="section-title">📊 角色最终属性（用于战斗计算）</div>
+                    <div id="battleFinalAttributesPanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px;"></div>
+                </div>
+                <!-- 局内战斗模拟内容将在这里添加 -->
             </div>
 
             <!-- 方案导入标签页 -->
@@ -2157,12 +2167,10 @@
             }
         }
         
-        // 更新角色最终属性面板
+        // 更新角色最终属性面板（同时更新主配置和战斗模拟页签）
         function updateFinalAttributesPanel() {
-            const panel = document.getElementById('finalAttributesPanel');
-            if (!panel) return;
-            
-            panel.innerHTML = characters.map(char => {
+            // 生成属性面板HTML内容
+            const panelContent = characters.map(char => {
                 const baseHp = char.baseHp || char.hp;
                 const baseAtk = char.baseAttack || char.attack;
                 const baseDef = char.baseDefense || char.defense;
@@ -2241,6 +2249,18 @@
                     </div>
                 `;
             }).join('');
+            
+            // 更新主配置页签中的最终属性面板
+            const mainPanel = document.getElementById('finalAttributesPanel');
+            if (mainPanel) {
+                mainPanel.innerHTML = panelContent;
+            }
+            
+            // 更新战斗模拟页签中的最终属性面板
+            const battlePanel = document.getElementById('battleFinalAttributesPanel');
+            if (battlePanel) {
+                battlePanel.innerHTML = panelContent;
+            }
         }
 
         // 更新装备表信息显示
@@ -4173,7 +4193,10 @@
             // 激活对应的按钮
             const buttons = document.querySelectorAll('.tab-button');
             buttons.forEach((btn, index) => {
-                if ((tabName === 'main' && index === 0) || (tabName === 'data' && index === 1) || (tabName === 'import' && index === 2)) {
+                if ((tabName === 'main' && index === 0) || 
+                    (tabName === 'battle' && index === 1) || 
+                    (tabName === 'data' && index === 2) || 
+                    (tabName === 'import' && index === 3)) {
                     btn.classList.add('active');
                 }
             });
