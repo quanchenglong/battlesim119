@@ -5867,6 +5867,10 @@
                     const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
                     if (waveElapsedTime >= waveData.duration) {
                         // 波次持续时间已到，不再生成新怪物
+                        // 特别处理：如果是最后一波（第20波），清零累计值，完全停止生成
+                        if (waveBattleState.currentWave === 20) {
+                            waveBattleState.spawnAccumulator = 0; // 清零累计值，防止继续生成
+                        }
                         waveBattleState.lastSpawnCheckTime = now; // 更新时间，避免累计值异常增长
                     } else {
                         // 计算自上次检查以来的时间差（秒）
@@ -5890,17 +5894,27 @@
                         // 累计怪物数量（每秒spawnRate只）
                         waveBattleState.spawnAccumulator += waveData.spawnRate * deltaTime;
                         
-                        // 当累计值>=1时，生成怪物（但不超过当前波次应该生成的总数）
+                        // 当累计值>=1时，生成怪物（但不超过当前波次应该生成的总数，且不超过持续时间）
                         let spawnedThisTick = 0;
                         const spawnTimeSec = Math.floor(waveBattleState.elapsedTime);
+                        // 重新计算waveElapsedTime，确保在生成过程中也检查持续时间
+                        const currentWaveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
                         while (waveBattleState.spawnAccumulator >= 1.0 && 
-                               waveBattleState.waveSpawnedCount < waveBattleState.waveTotalCount) {
+                               waveBattleState.waveSpawnedCount < waveBattleState.waveTotalCount &&
+                               currentWaveElapsedTime < waveData.duration) {
                             spawnWaveMonster(spawnTimeSec);
                             waveBattleState.spawnAccumulator -= 1.0; // 减去1只
                             spawnedThisTick++;
                             
                             // 额外保护：如果已经达到总数，清零累计值，避免继续生成
                             if (waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount) {
+                                waveBattleState.spawnAccumulator = 0;
+                                break;
+                            }
+                            
+                            // 额外保护：如果持续时间已到（特别是最后一波），清零累计值并停止生成
+                            const checkWaveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+                            if (checkWaveElapsedTime >= waveData.duration) {
                                 waveBattleState.spawnAccumulator = 0;
                                 break;
                             }
