@@ -992,6 +992,11 @@
                         <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
                             按照配置的20波怪物数据，逐波出怪并进行可视化战斗模拟
                         </div>
+                        <div style="margin-bottom: 10px; font-size: 0.85em; color: #555; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                            <span>怪物生成后前</span>
+                            <input type="number" id="monsterAttackDelayInput" min="0" max="60" step="0.5" value="5" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
+                            <span>秒不攻击（可配置）</span>
+                        </div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <button class="btn btn-primary" id="startWaveBattleBtn" onclick="startWaveBattle()" style="padding: 12px 30px; font-size: 1em; font-weight: 600; background: #667eea;">
                                 🎮 开始可视化模拟
@@ -1533,6 +1538,9 @@
         let waveBattleCoins = 0; // 当前银币
         let weaponLevel = 0; // 当前武器等级
         let skillLevel = 0; // 当前技能等级
+
+        // 怪物生成后开始攻击前的延迟时间（秒），默认5秒，可在界面中配置
+        let monsterAttackDelay = 5;
 
         // 平台属性配置
         let platformConfig = {
@@ -5565,6 +5573,15 @@
                 return;
             }
 
+            // 读取怪物攻击延迟配置（秒）
+            const delayInput = document.getElementById('monsterAttackDelayInput');
+            if (delayInput) {
+                const val = parseFloat(delayInput.value);
+                monsterAttackDelay = isNaN(val) || val < 0 ? 0 : val;
+            } else {
+                monsterAttackDelay = 5; // 安全兜底
+            }
+
             // 从界面读取最新的平台属性配置并更新
             platformConfig.heroCount = parseInt(document.getElementById('platformHeroCount')?.value) || 0;
             platformConfig.heroLevelSum = parseInt(document.getElementById('platformHeroLevelSum')?.value) || 0;
@@ -5779,6 +5796,7 @@
                 damageCoeff: waveData.damageCoeff,
                 coinReward: waveData.coinReward || 0, // 击杀获得的银币
                 spawnTimeSec: (typeof spawnTimeSec === 'number' && isFinite(spawnTimeSec)) ? spawnTimeSec : Math.floor(waveBattleState.elapsedTime),
+                spawnGameTime: waveBattleState.elapsedTime, // 精确记录生成时的战斗时间（秒）
                 isAlive: true,
                 lastAttackTime: 0
             };
@@ -6160,6 +6178,16 @@
 
         // 怪物攻击（波次战斗）
         function monsterAttackWave(monster) {
+            // 怪物生成后前 monsterAttackDelay 秒不攻击
+            const delay = typeof monsterAttackDelay === 'number' ? monsterAttackDelay : 0;
+            if (delay > 0) {
+                const spawnTime = (typeof monster.spawnGameTime === 'number' ? monster.spawnGameTime : waveBattleState.elapsedTime);
+                const aliveTime = waveBattleState.elapsedTime - spawnTime;
+                if (aliveTime < delay) {
+                    return;
+                }
+            }
+
             // 优先攻击角色1，按1~5顺序依次攻击
             let target = null;
             for (let i = 1; i <= 5; i++) {
