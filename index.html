@@ -527,20 +527,21 @@
             padding: 12px 20px;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 0.95em;
+            font-size: 1.1em;
+            color: #ffffff !important;
         }
 
         .upgrade-btn.weapon {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: #ffffff !important;
         }
 
         .upgrade-btn.skill {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
+            color: #ffffff !important;
         }
 
         .upgrade-btn:disabled {
@@ -554,9 +555,11 @@
         }
 
         .upgrade-info {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 5px;
+            font-size: 0.95em;
+            color: #ffffff;
+            margin-top: 8px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
         .battle-log {
@@ -6008,17 +6011,20 @@
                     const upgradeRatio = currentCoeff > 0 ? nextCoeff / currentCoeff : 1.0;
                     
                     weaponInfo.textContent = `Lv.${weaponLevel} (系数${currentCoeff.toFixed(2)}) → Lv.${nextWeaponLevel} (${weaponCost.cost}银币, +${((upgradeRatio - 1) * 100).toFixed(1)}%)`;
-                    // 根据是否可以升级设置颜色
+                    // 根据是否可以升级设置颜色（按钮主文字）
                     if (canUpgrade) {
-                        weaponBtn.style.color = '#51cf66'; // 绿色
+                        weaponBtn.style.color = '#90ee90'; // 浅绿色，更清晰
+                        weaponInfo.style.color = '#90ee90'; // 信息文字也用浅绿色
                     } else {
-                        weaponBtn.style.color = '#ff6b6b'; // 红色
+                        weaponBtn.style.color = '#ffcccc'; // 浅红色，更清晰
+                        weaponInfo.style.color = '#ffcccc'; // 信息文字也用浅红色
                     }
                 } else {
                     weaponBtn.disabled = true;
                     const currentCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
                     weaponInfo.textContent = `Lv.${weaponLevel} (系数${currentCoeff.toFixed(2)}, 已满级)`;
-                    weaponBtn.style.color = '#ff6b6b'; // 红色（已满级）
+                    weaponBtn.style.color = '#ffcccc'; // 浅红色（已满级），更清晰
+                    weaponInfo.style.color = '#ffcccc'; // 信息文字也用浅红色
                 }
             }
             
@@ -6039,17 +6045,20 @@
                     const upgradeRatio = currentCoeff > 0 ? nextCoeff / currentCoeff : 1.0;
                     
                     skillInfo.textContent = `Lv.${skillLevel} (系数${currentCoeff.toFixed(2)}) → Lv.${nextSkillLevel} (${skillCost.cost}银币, +${((upgradeRatio - 1) * 100).toFixed(1)}%)`;
-                    // 根据是否可以升级设置颜色
+                    // 根据是否可以升级设置颜色（按钮主文字）
                     if (canUpgrade) {
-                        skillBtn.style.color = '#51cf66'; // 绿色
+                        skillBtn.style.color = '#90ee90'; // 浅绿色，更清晰
+                        skillInfo.style.color = '#90ee90'; // 信息文字也用浅绿色
                     } else {
-                        skillBtn.style.color = '#ff6b6b'; // 红色
+                        skillBtn.style.color = '#ffcccc'; // 浅红色，更清晰
+                        skillInfo.style.color = '#ffcccc'; // 信息文字也用浅红色
                     }
                 } else {
                     skillBtn.disabled = true;
                     const currentCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
                     skillInfo.textContent = `Lv.${skillLevel} (系数${currentCoeff.toFixed(2)}, 已满级)`;
-                    skillBtn.style.color = '#ff6b6b'; // 红色（已满级）
+                    skillBtn.style.color = '#ffcccc'; // 浅红色（已满级），更清晰
+                    skillInfo.style.color = '#ffcccc'; // 信息文字也用浅红色
                 }
             }
         }
