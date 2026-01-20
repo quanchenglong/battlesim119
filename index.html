@@ -429,6 +429,24 @@
         .monster-sprite.attacking {
             animation: monsterAttackAnimation 0.5s ease;
         }
+        
+        /* 同一秒刷新的时间标记 */
+        .monster-spawn-time-tag {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 0.65em;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 5px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 2;
+        }
 
         .character-sprite.hit {
             animation: hitAnimation 0.3s ease;
@@ -1571,11 +1589,13 @@
             waveStartTime: 0, // 当前波次开始时间
             waveSpawnedCount: 0, // 当前波次已出怪物数
             waveTotalCount: 0, // 当前波次总怪物数
-            nextSpawnTime: 0, // 下次出怪时间
+            nextSpawnTime: 0, // 下次出怪时间（保留用于兼容，实际使用累计机制）
             monsterIdCounter: 0,
             totalMonstersKilled: 0,
             totalDamageDealt: 0,
-            totalDamageTaken: 0
+            totalDamageTaken: 0,
+            spawnAccumulator: 0, // 怪物生成累计值（用于小数生成率）
+            lastSpawnCheckTime: null // 上次检查生成的时间
         };
 
         // 加载英雄表（全局函数）
@@ -5592,7 +5612,9 @@
                 monsterIdCounter: 0,
                 totalMonstersKilled: 0,
                 totalDamageDealt: 0,
-                totalDamageTaken: 0
+                totalDamageTaken: 0,
+                spawnAccumulator: 0, // 怪物生成累计值（用于小数生成率）
+                lastSpawnCheckTime: Date.now() // 上次检查生成的时间
             };
 
             // 显示战斗区域（在tab-battle页签内）
@@ -5701,8 +5723,11 @@
 
             waveBattleState.waveStartTime = waveBattleState.elapsedTime;
             waveBattleState.waveSpawnedCount = 0;
+            // 计算总怪物数（使用累计机制，所以可以是小数累计到整数）
             waveBattleState.waveTotalCount = Math.floor(waveData.spawnRate * waveData.duration);
             waveBattleState.nextSpawnTime = Date.now();
+            waveBattleState.spawnAccumulator = 0; // 重置累计值
+            waveBattleState.lastSpawnCheckTime = Date.now(); // 重置检查时间
 
             // 更新显示
             updateWaveBattleInfo();
@@ -5716,7 +5741,8 @@
         }
 
         // 生成波次怪物
-        function spawnWaveMonster() {
+        // 注意：为了支持“同一时刻批量出怪”（避免逐只刷新导致明显先后顺序），这里不再负责刷新场景/UI，调用方批量生成后统一刷新。
+        function spawnWaveMonster(spawnTimeSec) {
             if (waveBattleState.currentWave <= 0 || waveBattleState.currentWave > 20) {
                 return;
             }
@@ -5752,6 +5778,7 @@
                 atkSpeed: waveData.atkSpeed,
                 damageCoeff: waveData.damageCoeff,
                 coinReward: waveData.coinReward || 0, // 击杀获得的银币
+                spawnTimeSec: (typeof spawnTimeSec === 'number' && isFinite(spawnTimeSec)) ? spawnTimeSec : Math.floor(waveBattleState.elapsedTime),
                 isAlive: true,
                 lastAttackTime: 0
             };
@@ -5761,13 +5788,7 @@
 
             addLog(`[${formatTime(waveBattleState.elapsedTime)}] 第${waveBattleState.currentWave}波 怪物 #${monster.id} 出现！`);
 
-            // 计算下次出怪时间
-            const spawnInterval = 1000 / waveData.spawnRate;
-            waveBattleState.nextSpawnTime = Date.now() + spawnInterval;
-
-            // 更新显示
-            updateWaveBattleInfo();
-            updateBattleScene(); // 更新可视化场景
+            // 累计值已使用，不需要设置下次出怪时间（由累计机制控制）
         }
 
         // 波次战斗循环
@@ -5794,11 +5815,31 @@
                 }
             }
 
-            // 生成怪物（如果当前波次还在持续时间内）
+            // 生成怪物（使用累计机制支持小数生成率；同一帧内批量出怪后统一刷新，避免明显先后顺序）
             if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
                 const waveData = battleWaveData[waveBattleState.currentWave];
-                if (waveData && now >= waveBattleState.nextSpawnTime) {
-                    spawnWaveMonster();
+                if (waveData) {
+                    // 计算自上次检查以来的时间差（秒）
+                    const deltaTime = (now - waveBattleState.lastSpawnCheckTime) / 1000;
+                    waveBattleState.lastSpawnCheckTime = now;
+                    
+                    // 累计怪物数量（每秒spawnRate只）
+                    waveBattleState.spawnAccumulator += waveData.spawnRate * deltaTime;
+                    
+                    // 当累计值>=1时，生成怪物
+                    let spawnedThisTick = 0;
+                    const spawnTimeSec = Math.floor(waveBattleState.elapsedTime);
+                    while (waveBattleState.spawnAccumulator >= 1.0) {
+                        spawnWaveMonster(spawnTimeSec);
+                        waveBattleState.spawnAccumulator -= 1.0; // 减去1只
+                        spawnedThisTick++;
+                    }
+
+                    // 本帧如果生成了怪物，统一刷新一次，确保同时出现
+                    if (spawnedThisTick > 0) {
+                        updateWaveBattleInfo();
+                        updateBattleScene();
+                    }
                 }
             }
 
@@ -6314,11 +6355,13 @@
                     monstersSide.innerHTML = aliveMonsters.map(monster => {
                         const hpPercent = monster.maxHp > 0 ? (monster.hp / monster.maxHp * 100) : 0;
                         const emoji = getMonsterEmoji(monster.id);
+                        const spawnTag = (monster.spawnTimeSec !== undefined && monster.spawnTimeSec !== null) ? `${monster.spawnTimeSec}s` : '';
                         
                         return `
                             <div class="monster-sprite ${monster.isAlive ? '' : 'dead'}" 
                                  id="monster-sprite-${monster.id}" 
                                  data-monster-id="${monster.id}">
+                                ${spawnTag ? `<div class="monster-spawn-time-tag">${spawnTag}</div>` : ''}
                                 <div class="monster-avatar">${emoji}</div>
                                 <div class="monster-hp-bar">
                                     <div class="monster-hp-fill" style="width: ${hpPercent}%;"></div>
