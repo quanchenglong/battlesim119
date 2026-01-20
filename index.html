@@ -946,6 +946,21 @@
                         <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
                             配置20波怪物数据，可选择怪物ID自动填充攻防血，或手动输入
                         </div>
+                        
+                        <!-- 20波怪物数据方案管理 -->
+                        <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 2px solid #e0e0e0;">
+                            <div style="font-weight: 600; margin-bottom: 10px; color: #333;">💾 20波怪物数据方案管理（最多8个）</div>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+                                <input type="text" id="battleWaveSchemeNameInput" placeholder="方案名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 150px;" />
+                                <button class="btn btn-primary" onclick="saveBattleWaveScheme()" style="padding: 8px 16px; font-size: 0.9em;">保存方案</button>
+                                <select id="battleWaveSchemeSelect" onchange="loadBattleWaveScheme(this.value)" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; min-width: 150px;">
+                                    <option value="">选择方案...</option>
+                                </select>
+                                <button class="btn btn-danger" onclick="deleteBattleWaveScheme()" style="padding: 8px 16px; font-size: 0.9em; background: #ff6b6b;">删除方案</button>
+                            </div>
+                            <div id="battleWaveSchemeStatus" style="font-size: 0.85em; color: #666;"></div>
+                        </div>
+                        
                         <div id="battleWaveDataGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 15px;"></div>
                     </div>
                 </div>
@@ -3183,8 +3198,19 @@
                 const waveCard = document.createElement('div');
                 waveCard.id = `battle-wave-card-${wave}`;
                 waveCard.style.cssText = 'background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;';
+                
+                // 第一波添加复制按钮
+                const copyButtonHtml = wave === 1 ? `
+                    <div style="margin-bottom: 10px;">
+                        <button class="btn btn-secondary" onclick="copyWave1ToOthers()" style="padding: 8px 16px; font-size: 0.9em; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            📋 复制到其他波次
+                        </button>
+                    </div>
+                ` : '';
+                
                 waveCard.innerHTML = `
                     <div style="font-weight: 600; color: #333; margin-bottom: 10px; font-size: 1.05em;">第 ${wave} 波</div>
+                    ${copyButtonHtml}
                     <div class="input-group" style="margin-bottom: 10px;">
                         <label style="font-size: 0.9em;">怪物ID</label>
                         <select id="battle-wave-${wave}-monster" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;">
@@ -3373,6 +3399,313 @@
                 updateBattleWaveTotalCount(wave);
             }
         }
+        
+        // 复制第一波数据到其他波次
+        window.copyWave1ToOthers = function() {
+            // 从界面读取第一波的所有数据
+            const wave1Data = {
+                monsterId: document.getElementById('battle-wave-1-monster')?.value || '',
+                attack: parseFloat(document.getElementById('battle-wave-1-attack')?.value) || 10,
+                defense: parseFloat(document.getElementById('battle-wave-1-defense')?.value) || 5,
+                hp: parseFloat(document.getElementById('battle-wave-1-hp')?.value) || 50,
+                atkSpeed: parseFloat(document.getElementById('battle-wave-1-atkSpeed')?.value) || 0.33,
+                damageCoeff: parseFloat(document.getElementById('battle-wave-1-damageCoeff')?.value) || 1,
+                hpCoeff: parseFloat(document.getElementById('battle-wave-1-hpCoeff')?.value) || 1,
+                spawnRate: parseFloat(document.getElementById('battle-wave-1-spawnRate')?.value) || 1,
+                duration: parseFloat(document.getElementById('battle-wave-1-duration')?.value) || 10,
+                coinReward: parseFloat(document.getElementById('battle-wave-1-coinReward')?.value) || 0
+            };
+            
+            // 复制到第2-20波
+            for (let wave = 2; wave <= 20; wave++) {
+                // 更新内存中的数据
+                battleWaveData[wave] = {
+                    monsterId: wave1Data.monsterId,
+                    attack: wave1Data.attack,
+                    defense: wave1Data.defense,
+                    hp: wave1Data.hp,
+                    atkSpeed: wave1Data.atkSpeed,
+                    damageCoeff: wave1Data.damageCoeff,
+                    hpCoeff: wave1Data.hpCoeff,
+                    spawnRate: wave1Data.spawnRate,
+                    duration: wave1Data.duration,
+                    coinReward: wave1Data.coinReward
+                };
+                
+                // 更新界面显示
+                const monsterSelect = document.getElementById(`battle-wave-${wave}-monster`);
+                const attackInput = document.getElementById(`battle-wave-${wave}-attack`);
+                const defenseInput = document.getElementById(`battle-wave-${wave}-defense`);
+                const hpInput = document.getElementById(`battle-wave-${wave}-hp`);
+                const atkSpeedInput = document.getElementById(`battle-wave-${wave}-atkSpeed`);
+                const damageCoeffInput = document.getElementById(`battle-wave-${wave}-damageCoeff`);
+                const hpCoeffInput = document.getElementById(`battle-wave-${wave}-hpCoeff`);
+                const spawnRateInput = document.getElementById(`battle-wave-${wave}-spawnRate`);
+                const durationInput = document.getElementById(`battle-wave-${wave}-duration`);
+                const coinRewardInput = document.getElementById(`battle-wave-${wave}-coinReward`);
+                
+                if (monsterSelect) monsterSelect.value = wave1Data.monsterId;
+                if (attackInput) attackInput.value = wave1Data.attack;
+                if (defenseInput) defenseInput.value = wave1Data.defense;
+                if (hpInput) hpInput.value = wave1Data.hp;
+                if (atkSpeedInput) atkSpeedInput.value = wave1Data.atkSpeed;
+                if (damageCoeffInput) damageCoeffInput.value = wave1Data.damageCoeff;
+                if (hpCoeffInput) hpCoeffInput.value = wave1Data.hpCoeff;
+                if (spawnRateInput) spawnRateInput.value = wave1Data.spawnRate;
+                if (durationInput) durationInput.value = wave1Data.duration;
+                if (coinRewardInput) coinRewardInput.value = wave1Data.coinReward;
+                
+                // 更新怪物信息显示
+                if (wave1Data.monsterId && monsterTable.length > 0) {
+                    const monster = monsterTable.find(m => m.id === wave1Data.monsterId);
+                    const monsterInfo = document.getElementById(`battle-wave-${wave}-monster-info`);
+                    if (monsterInfo && monster) {
+                        monsterInfo.textContent = ` (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                    } else if (monsterInfo) {
+                        monsterInfo.textContent = '';
+                    }
+                } else {
+                    const monsterInfo = document.getElementById(`battle-wave-${wave}-monster-info`);
+                    if (monsterInfo) monsterInfo.textContent = '';
+                }
+                
+                // 更新总怪物数显示
+                updateBattleWaveTotalCount(wave);
+            }
+            
+            showMessage('已将第一波数据复制到第2-20波', 'success');
+        };
+        
+        // ========== 20波怪物数据方案管理 ==========
+        
+        // 加载20波方案列表
+        function loadBattleWaveSchemes() {
+            try {
+                const data = localStorage.getItem(BATTLE_WAVE_STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (error) {
+                console.error('加载20波方案失败:', error);
+                return [];
+            }
+        }
+        
+        // 更新20波方案下拉选择框
+        function updateBattleWaveSchemeSelect() {
+            const selectEl = document.getElementById('battleWaveSchemeSelect');
+            if (!selectEl) return;
+            
+            const schemes = loadBattleWaveSchemes();
+            const currentValue = selectEl.value || currentBattleWaveSchemeId || '';
+            
+            // 清空并重新填充
+            selectEl.innerHTML = '<option value="">选择方案...</option>';
+            
+            schemes.forEach(scheme => {
+                const option = document.createElement('option');
+                option.value = scheme.id;
+                option.textContent = scheme.name;
+                if (scheme.id === currentValue) {
+                    option.selected = true;
+                }
+                selectEl.appendChild(option);
+            });
+            
+            // 更新状态显示
+            const statusEl = document.getElementById('battleWaveSchemeStatus');
+            if (statusEl) {
+                if (schemes.length > 0) {
+                    statusEl.textContent = `已保存 ${schemes.length} 个方案（最多${MAX_BATTLE_WAVE_SCHEMES}个）`;
+                    statusEl.style.color = '#51cf66';
+                } else {
+                    statusEl.textContent = '暂无保存的方案';
+                    statusEl.style.color = '#666';
+                }
+            }
+        }
+        
+        // 保存20波方案
+        window.saveBattleWaveScheme = function() {
+            const nameInput = document.getElementById('battleWaveSchemeNameInput');
+            if (!nameInput) return;
+            
+            const name = nameInput.value.trim();
+            if (!name) {
+                showMessage('请输入方案名称', 'error');
+                return;
+            }
+            
+            // 从界面读取最新的20波怪物数据
+            const latestBattleWaveData = {};
+            for (let wave = 1; wave <= 20; wave++) {
+                const monsterSelect = document.getElementById(`battle-wave-${wave}-monster`);
+                const attackInput = document.getElementById(`battle-wave-${wave}-attack`);
+                const defenseInput = document.getElementById(`battle-wave-${wave}-defense`);
+                const hpInput = document.getElementById(`battle-wave-${wave}-hp`);
+                const atkSpeedInput = document.getElementById(`battle-wave-${wave}-atkSpeed`);
+                const damageCoeffInput = document.getElementById(`battle-wave-${wave}-damageCoeff`);
+                const hpCoeffInput = document.getElementById(`battle-wave-${wave}-hpCoeff`);
+                const spawnRateInput = document.getElementById(`battle-wave-${wave}-spawnRate`);
+                const durationInput = document.getElementById(`battle-wave-${wave}-duration`);
+                const coinRewardInput = document.getElementById(`battle-wave-${wave}-coinReward`);
+                
+                if (monsterSelect && attackInput && defenseInput && hpInput && 
+                    atkSpeedInput && damageCoeffInput && hpCoeffInput &&
+                    spawnRateInput && durationInput) {
+                    latestBattleWaveData[wave] = {
+                        monsterId: monsterSelect.value || '',
+                        attack: parseFloat(attackInput.value) || 10,
+                        defense: parseFloat(defenseInput.value) || 5,
+                        hp: parseFloat(hpInput.value) || 50,
+                        atkSpeed: parseFloat(atkSpeedInput.value) || 0.33,
+                        damageCoeff: parseFloat(damageCoeffInput.value) || 1,
+                        hpCoeff: parseFloat(hpCoeffInput.value) || 1,
+                        spawnRate: parseFloat(spawnRateInput.value) || 1,
+                        duration: parseFloat(durationInput.value) || 10,
+                        coinReward: coinRewardInput ? (parseFloat(coinRewardInput.value) || 0) : 0
+                    };
+                }
+            }
+            
+            const schemes = loadBattleWaveSchemes();
+            
+            // 检查方案数量
+            if (schemes.length >= MAX_BATTLE_WAVE_SCHEMES && !currentBattleWaveSchemeId) {
+                showMessage(`最多只能保存${MAX_BATTLE_WAVE_SCHEMES}个方案，请先删除一个`, 'error');
+                return;
+            }
+            
+            const schemeData = {
+                id: currentBattleWaveSchemeId || Date.now().toString(),
+                name: name,
+                saveTime: new Date().toISOString(),
+                battleWaveData: latestBattleWaveData
+            };
+            
+            // 如果已存在，更新；否则添加
+            if (currentBattleWaveSchemeId) {
+                const existingIndex = schemes.findIndex(s => s.id === currentBattleWaveSchemeId);
+                if (existingIndex >= 0) {
+                    schemes[existingIndex] = schemeData;
+                } else {
+                    schemes.push(schemeData);
+                }
+            } else {
+                schemes.push(schemeData);
+            }
+            
+            // 保存到localStorage
+            localStorage.setItem(BATTLE_WAVE_STORAGE_KEY, JSON.stringify(schemes));
+            
+            // 更新当前方案ID
+            currentBattleWaveSchemeId = schemeData.id;
+            
+            // 更新下拉选择框
+            updateBattleWaveSchemeSelect();
+            
+            // 更新输入框显示
+            nameInput.value = name;
+            
+            showMessage(`20波方案"${name}"已保存`, 'success');
+        };
+        
+        // 加载20波方案（通过下拉选择框）
+        window.loadBattleWaveScheme = function(schemeId) {
+            if (!schemeId) {
+                currentBattleWaveSchemeId = null;
+                updateBattleWaveSchemeSelect();
+                return;
+            }
+            loadBattleWaveSchemeById(schemeId);
+        };
+        
+        // 根据ID加载20波方案
+        function loadBattleWaveSchemeById(schemeId) {
+            const schemes = loadBattleWaveSchemes();
+            const scheme = schemes.find(s => s.id === schemeId);
+            if (!scheme) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            
+            // 加载20波数据
+            if (scheme.battleWaveData) {
+                for (let wave = 1; wave <= 20; wave++) {
+                    if (scheme.battleWaveData[wave]) {
+                        battleWaveData[wave] = {
+                            monsterId: scheme.battleWaveData[wave].monsterId || '',
+                            attack: scheme.battleWaveData[wave].attack !== undefined ? scheme.battleWaveData[wave].attack : 10,
+                            defense: scheme.battleWaveData[wave].defense !== undefined ? scheme.battleWaveData[wave].defense : 5,
+                            hp: scheme.battleWaveData[wave].hp !== undefined ? scheme.battleWaveData[wave].hp : 50,
+                            atkSpeed: scheme.battleWaveData[wave].atkSpeed !== undefined ? scheme.battleWaveData[wave].atkSpeed : 0.33,
+                            damageCoeff: scheme.battleWaveData[wave].damageCoeff !== undefined ? scheme.battleWaveData[wave].damageCoeff : 1,
+                            hpCoeff: scheme.battleWaveData[wave].hpCoeff !== undefined ? scheme.battleWaveData[wave].hpCoeff : 1,
+                            spawnRate: scheme.battleWaveData[wave].spawnRate !== undefined ? scheme.battleWaveData[wave].spawnRate : 1,
+                            duration: scheme.battleWaveData[wave].duration !== undefined ? scheme.battleWaveData[wave].duration : 10,
+                            coinReward: scheme.battleWaveData[wave].coinReward !== undefined ? scheme.battleWaveData[wave].coinReward : 0
+                        };
+                    }
+                }
+            }
+            
+            // 重新初始化界面以应用加载的配置
+            initBattleWaveData();
+            
+            // 更新当前方案ID和下拉选择框
+            currentBattleWaveSchemeId = schemeId;
+            updateBattleWaveSchemeSelect();
+            
+            // 更新输入框显示
+            const nameInput = document.getElementById('battleWaveSchemeNameInput');
+            if (nameInput) {
+                nameInput.value = scheme.name;
+            }
+            
+            showMessage(`已加载20波方案"${scheme.name}"`, 'success');
+        }
+        
+        // 删除20波方案
+        window.deleteBattleWaveScheme = function() {
+            const selectEl = document.getElementById('battleWaveSchemeSelect');
+            if (!selectEl || !selectEl.value) {
+                showMessage('请先选择一个方案', 'error');
+                return;
+            }
+            
+            const schemeId = selectEl.value;
+            const schemes = loadBattleWaveSchemes();
+            const scheme = schemes.find(s => s.id === schemeId);
+            
+            if (!scheme) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            
+            if (!confirm(`确定要删除方案"${scheme.name}"吗？`)) {
+                return;
+            }
+            
+            // 删除方案
+            const index = schemes.findIndex(s => s.id === schemeId);
+            if (index >= 0) {
+                schemes.splice(index, 1);
+                localStorage.setItem(BATTLE_WAVE_STORAGE_KEY, JSON.stringify(schemes));
+            }
+            
+            // 如果删除的是当前方案，清空当前方案ID
+            if (currentBattleWaveSchemeId === schemeId) {
+                currentBattleWaveSchemeId = null;
+                const nameInput = document.getElementById('battleWaveSchemeNameInput');
+                if (nameInput) nameInput.value = '';
+            }
+            
+            // 更新下拉选择框
+            updateBattleWaveSchemeSelect();
+            
+            // 清空选择
+            selectEl.value = '';
+            
+            showMessage(`方案"${scheme.name}"已删除`, 'success');
+        };
 
         // 更新关卡配置（全局函数）
         window.updateStageConfig = function(stage) {
@@ -6088,6 +6421,11 @@
         const MAX_SCHEMES = 10;
         let currentSchemeId = null;
         
+        // 20波怪物数据方案管理
+        const BATTLE_WAVE_STORAGE_KEY = 'battleSimulatorBattleWaveSchemes';
+        const MAX_BATTLE_WAVE_SCHEMES = 8;
+        let currentBattleWaveSchemeId = null;
+        
         // 共享存储配置
         const SHARED_GIST_ID_KEY = 'battleSimulatorSharedGistId';
         let sharedGistId = null;
@@ -6674,9 +7012,15 @@
                 initStageConfig();
             }
 
-            // 加载20波怪物数据输入配置
-            if (scheme.battleWaveData) {
-                // 合并保存的20波怪物数据输入配置
+            // 加载20波怪物数据输入配置（根据方案ID加载）
+            if (scheme.battleWaveSchemeId) {
+                currentBattleWaveSchemeId = scheme.battleWaveSchemeId;
+                // 更新下拉选择框
+                updateBattleWaveSchemeSelect();
+                // 加载对应的20波方案
+                loadBattleWaveSchemeById(scheme.battleWaveSchemeId);
+            } else if (scheme.battleWaveData) {
+                // 兼容旧方案：如果保存了完整数据，直接加载
                 for (let wave = 1; wave <= 20; wave++) {
                     if (scheme.battleWaveData[wave]) {
                         battleWaveData[wave] = {
@@ -6693,7 +7037,6 @@
                         };
                     }
                 }
-                
                 // 重新初始化20波怪物数据输入界面以应用加载的配置
                 initBattleWaveData();
             }
@@ -7147,6 +7490,9 @@
             
             // 初始化20波怪物数据输入界面
             initBattleWaveData();
+            
+            // 初始化20波怪物数据方案下拉选择框
+            updateBattleWaveSchemeSelect();
             
             // 初始化平台属性配置显示
             updatePlatformAttributes();
