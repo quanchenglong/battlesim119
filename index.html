@@ -995,7 +995,11 @@
                         <div style="margin-bottom: 10px; font-size: 0.85em; color: #555; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
                             <span>怪物生成后前</span>
                             <input type="number" id="monsterAttackDelayInput" min="0" max="60" step="0.5" value="5" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
-                            <span>秒不攻击（可配置）</span>
+                            <span>秒不攻击；角色攻击频率</span>
+                            <input type="number" id="characterAttackIntervalInput" min="0.01" max="5" step="0.01" value="0.1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
+                            <span>秒/次，伤害系数</span>
+                            <input type="number" id="characterDamageScaleInput" min="0.01" max="10" step="0.01" value="0.1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
+                            <span>倍（均可配置）</span>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <button class="btn btn-primary" id="startWaveBattleBtn" onclick="startWaveBattle()" style="padding: 12px 30px; font-size: 1em; font-weight: 600; background: #667eea;">
@@ -1541,6 +1545,9 @@
 
         // 怪物生成后开始攻击前的延迟时间（秒），默认5秒，可在界面中配置
         let monsterAttackDelay = 5;
+        // 角色攻击频率（秒/次），默认0.1秒攻击一次；以及每次攻击伤害倍率，默认0.1倍，可在界面中配置
+        let characterAttackInterval = 0.1;
+        let characterDamageScale = 0.1;
 
         // 平台属性配置
         let platformConfig = {
@@ -5582,6 +5589,23 @@
                 monsterAttackDelay = 5; // 安全兜底
             }
 
+            // 读取角色攻击频率（秒/次）和伤害倍率配置
+            const atkIntervalInput = document.getElementById('characterAttackIntervalInput');
+            if (atkIntervalInput) {
+                const val = parseFloat(atkIntervalInput.value);
+                characterAttackInterval = isNaN(val) || val <= 0 ? 0.1 : val;
+            } else {
+                characterAttackInterval = 0.1;
+            }
+
+            const dmgScaleInput = document.getElementById('characterDamageScaleInput');
+            if (dmgScaleInput) {
+                const val = parseFloat(dmgScaleInput.value);
+                characterDamageScale = isNaN(val) || val <= 0 ? 0.1 : val;
+            } else {
+                characterDamageScale = 0.1;
+            }
+
             // 从界面读取最新的平台属性配置并更新
             platformConfig.heroCount = parseInt(document.getElementById('platformHeroCount')?.value) || 0;
             platformConfig.heroLevelSum = parseInt(document.getElementById('platformHeroLevelSum')?.value) || 0;
@@ -5867,7 +5891,10 @@
             waveBattleState.characters.forEach(char => {
                 if (char.isAlive && waveBattleState.monsters.length > 0) {
                     const timeSinceLastAttack = (now - char.lastAttackTime) / 1000;
-                    const attackInterval = 1 / char.atkSpeed;
+                    // 使用全局配置的角色攻击频率，默认0.1秒1次
+                    const attackInterval = typeof characterAttackInterval === 'number' && characterAttackInterval > 0
+                        ? characterAttackInterval
+                        : (1 / char.atkSpeed);
 
                     if (timeSinceLastAttack >= attackInterval) {
                         characterAttackWave(char);
@@ -5979,6 +6006,10 @@
             const currentSkillData = skillCostTable.find(s => s.level === skillLevel);
             const skillDamageCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
             finalDamage = finalDamage * skillDamageCoeff;
+
+            // 应用统一的角色攻击伤害倍率（例如0.1倍伤害）
+            const dmgScale = (typeof characterDamageScale === 'number' && characterDamageScale > 0) ? characterDamageScale : 1.0;
+            finalDamage = finalDamage * dmgScale;
             finalDamage = Math.max(1, Math.floor(finalDamage));
             
             target.hp -= finalDamage;
