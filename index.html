@@ -220,6 +220,345 @@
             display: block;
         }
 
+        /* 波次战斗区域（在tab-battle页签内） */
+        #waveBattleArea {
+            display: none;
+        }
+
+        #waveBattleArea[style*="block"] {
+            display: block !important;
+        }
+
+        /* 可视化战斗场景 */
+        .battle-scene {
+            width: 100%;
+            min-height: 400px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 主配置页签的战斗场景不显示背景 */
+        #battleArea #battleScene {
+            background: transparent !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin-bottom: 0 !important;
+            display: none !important;
+        }
+
+        .battle-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 350px;
+            position: relative;
+        }
+
+        /* 角色区域 */
+        .characters-side {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .character-sprite {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            border: 2px solid #fff;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .character-sprite.dead {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+
+        .character-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .character-avatar.tank { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .character-avatar.warrior { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .character-avatar.archer { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .character-avatar.support { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+        .character-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .character-name {
+            font-weight: 600;
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+
+        .character-hp-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .character-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #51cf66 0%, #40c057 100%);
+            transition: width 0.3s ease;
+        }
+
+        .character-hp-fill.low {
+            background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);
+        }
+
+        /* 怪物区域 */
+        .monsters-side {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1;
+            justify-content: flex-end;
+            align-items: flex-start;
+            max-width: 500px;
+        }
+
+        .monster-sprite {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            border: 2px solid #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .monster-sprite.dead {
+            opacity: 0.3;
+            transform: scale(0.8);
+            filter: grayscale(100%);
+        }
+
+        .monster-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .monster-hp-bar {
+            width: 70px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .monster-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);
+            transition: width 0.3s ease;
+        }
+
+        .monster-id {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* 攻击动画 */
+        @keyframes attackAnimation {
+            0% { transform: translateX(0) scale(1); }
+            50% { transform: translateX(30px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+
+        @keyframes monsterAttackAnimation {
+            0% { transform: translateX(0) scale(1); }
+            50% { transform: translateX(-30px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+
+        @keyframes hitAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        .character-sprite.attacking {
+            animation: attackAnimation 0.5s ease;
+        }
+
+        .monster-sprite.attacking {
+            animation: monsterAttackAnimation 0.5s ease;
+        }
+
+        .character-sprite.hit {
+            animation: hitAnimation 0.3s ease;
+        }
+
+        .monster-sprite.hit {
+            animation: hitAnimation 0.3s ease;
+        }
+
+        .damage-number {
+            position: absolute;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+            pointer-events: none;
+            z-index: 1000;
+            animation: damageFloat 1s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .heal-number {
+            position: absolute;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #51cf66;
+            pointer-events: none;
+            z-index: 1000;
+            animation: damageFloat 1s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 波次标识 */
+        .wave-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1em;
+            z-index: 100;
+        }
+
+        /* 银币和升级UI */
+        .battle-ui-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+        
+        /* 波次战斗的UI面板使用正常布局 */
+        #waveBattleUIPanel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .coins-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f59f00;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #ffd43b 0%, #f59f00 100%);
+            border-radius: 8px;
+            color: white;
+        }
+        
+        /* 波次战斗的UI面板（在战斗场景中，波次指示器下方） */
+        #waveBattleUIPanel {
+            position: relative !important;
+            top: auto !important;
+            right: auto !important;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 15px auto 0 auto;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .upgrade-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .upgrade-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .upgrade-btn.weapon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .upgrade-btn.skill {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .upgrade-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upgrade-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .upgrade-info {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
         .battle-log {
             max-height: 400px;
             overflow-y: auto;
@@ -600,7 +939,77 @@
                     <div class="section-title">📊 角色最终属性（用于战斗计算）</div>
                     <div id="battleFinalAttributesPanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px;"></div>
                 </div>
-                <!-- 局内战斗模拟内容将在这里添加 -->
+
+                <div class="config-section">
+                    <div class="section-title">🏆 20波怪物数据输入</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                            配置20波怪物数据，可选择怪物ID自动填充攻防血，或手动输入
+                        </div>
+                        <div id="battleWaveDataGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 15px;"></div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">⚔️ 可视化战斗模拟</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                            按照配置的20波怪物数据，逐波出怪并进行可视化战斗模拟
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-primary" id="startWaveBattleBtn" onclick="startWaveBattle()" style="padding: 12px 30px; font-size: 1em; font-weight: 600; background: #667eea;">
+                                🎮 开始可视化模拟
+                            </button>
+                            <button class="btn btn-secondary" id="stopWaveBattleBtn" onclick="stopWaveBattle()" style="padding: 12px 30px; font-size: 1em; font-weight: 600; display: none;">
+                                ⏹️ 停止模拟
+                            </button>
+                            <div id="waveBattleStatus" style="font-size: 0.9em; color: #666; margin-left: 10px;"></div>
+                        </div>
+                        <div id="waveBattleInfo" style="margin-top: 15px; padding: 12px; background: white; border-radius: 6px; font-size: 0.9em; color: #666; display: none;">
+                            <div>当前波次: <span id="currentWaveNumber">-</span> / 20</div>
+                            <div>已出怪物数: <span id="currentWaveSpawned">-</span> / <span id="currentWaveTotal">-</span></div>
+                            <div>存活怪物数: <span id="currentWaveAlive">-</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 可视化战斗场景和相关信息（在tab-battle页签内） -->
+                <div class="battle-area" id="waveBattleArea" style="display: none;">
+                    <div class="section-title">⚔️ 战斗进行中</div>
+                    <div class="battle-stats" id="waveBattleStats"></div>
+                    
+                    <!-- 可视化战斗场景 -->
+                    <div class="battle-scene" id="waveBattleScene">
+                        <div class="wave-indicator" id="waveIndicator" style="display: none;">第 0 波</div>
+                        
+                        <!-- 银币和升级按钮（在波次指示器下方） -->
+                        <div class="battle-ui-panel" id="waveBattleUIPanel" style="margin-top: 15px; display: none;">
+                            <div class="coins-display">
+                                💰 <span id="waveCoinsDisplay">0</span>
+                            </div>
+                            <div class="upgrade-buttons">
+                                <button class="upgrade-btn weapon" id="waveUpgradeWeaponBtn" onclick="upgradeWeapon()">
+                                    ⚔️ 武器升级
+                                    <div class="upgrade-info" id="waveWeaponUpgradeInfo">Lv.0</div>
+                                </button>
+                                <button class="upgrade-btn skill" id="waveUpgradeSkillBtn" onclick="upgradeSkill()">
+                                    ✨ 技能升级
+                                    <div class="upgrade-info" id="waveSkillUpgradeInfo">Lv.0</div>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="battle-field">
+                            <div class="characters-side" id="waveCharactersSide"></div>
+                            <div class="monsters-side" id="waveMonstersSide"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="characters-panel">
+                        <div class="section-title" style="margin-bottom: 15px;">👥 角色状态</div>
+                        <div class="characters-panel-grid" id="waveCharactersPanel"></div>
+                    </div>
+                    <div class="battle-log" id="waveBattleLog"></div>
+                </div>
             </div>
 
             <!-- 方案导入标签页 -->
@@ -665,6 +1074,47 @@
                             <span id="monsterTableStatus" style="color: #666; font-size: 0.9em;">未加载怪物表</span>
                         </div>
                         <div id="monsterTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
+                    <div class="section-title">⚔️ 局内武器技能升级表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="upgradeFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadUpgradeTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('upgradeFileInput').click()" style="padding: 8px 20px;">上传升级表</button>
+                            <span id="upgradeTableStatus" style="color: #666; font-size: 0.9em;">未加载升级表</span>
+                        </div>
+                        
+                        <!-- 武器升级系数查看模块 -->
+                        <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 2px solid #e0e0e0;">
+                            <div style="font-weight: 600; margin-bottom: 10px; color: #333;">🔍 武器升级系数查看</div>
+                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                                <label style="font-size: 0.9em; color: #666;">选择武器升级次数：</label>
+                                <select id="weaponLevelViewer" onchange="updateWeaponCoeffViewer()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; min-width: 120px;">
+                                    <option value="-1">请选择</option>
+                                </select>
+                            </div>
+                            <div id="weaponCoeffInfo" style="display: none; padding: 12px; background: #f8f9ff; border-radius: 6px; font-size: 0.9em;">
+                                <div style="margin-bottom: 8px;">
+                                    <span style="color: #666;">当前等级：</span>
+                                    <span id="currentWeaponLevelView" style="font-weight: 600; color: #667eea;"></span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <span style="color: #666;">当前伤害系数：</span>
+                                    <span id="currentWeaponCoeffView" style="font-weight: 600; color: #51cf66;"></span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <span style="color: #666;">升级消耗：</span>
+                                    <span id="weaponUpgradeCostView" style="font-weight: 600; color: #f59f00;"></span>
+                                </div>
+                                <div>
+                                    <span style="color: #666;">下一级提升值：</span>
+                                    <span id="weaponUpgradeRatioView" style="font-weight: 600; color: #f5576c;"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="upgradeTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
                     </div>
                 </div>
 
@@ -892,10 +1342,8 @@
                         <label>血量系数</label>
                         <input type="number" id="monsterHpCoeff" min="0" step="0.01" value="0" />
                         <div style="font-size: 0.8em; color: #666; margin-top: 4px;">进入战斗时血量 = 基础血量 × (1 + 血量系数)</div>
-                    </div>
                 </div>
             </div>
-        </div>
         </div>
 
         <div class="control-panel">
@@ -904,12 +1352,22 @@
             <button class="btn btn-success" id="quickResultBtn" onclick="quickBattle()" style="background: #51cf66;">直接显示结果</button>
             <button class="btn btn-danger" id="stopBtn" onclick="stopBattle()" style="display: none;">停止战斗</button>
         </div>
+        </div>
 
         <div class="message" id="message"></div>
 
         <div class="battle-area" id="battleArea">
             <div class="section-title">⚔️ 战斗进行中</div>
             <div class="battle-stats" id="battleStats"></div>
+            
+            <!-- 可视化战斗场景（主配置页签不使用，隐藏背景） -->
+            <div class="battle-scene" id="battleScene" style="background: transparent; min-height: 0; padding: 0; display: none;">
+                <div class="battle-field">
+                    <div class="characters-side" id="charactersSide"></div>
+                    <div class="monsters-side" id="monstersSide"></div>
+                </div>
+            </div>
+            
             <div class="characters-panel">
                 <div class="section-title" style="margin-bottom: 15px;">👥 角色状态</div>
                 <div class="characters-panel-grid" id="charactersPanel"></div>
@@ -1014,6 +1472,32 @@
             };
         }
 
+        // 20波怪物数据输入配置（用于局内战斗模拟）
+        let battleWaveData = {};
+        for (let i = 1; i <= 20; i++) {
+            battleWaveData[i] = {
+                monsterId: '', // 怪物ID（从怪物表选择，为空则手动输入）
+                attack: 10, // 攻击力（选择怪物ID时自动填充，也可手动输入）
+                defense: 5, // 防御力（选择怪物ID时自动填充，也可手动输入）
+                hp: 50, // 生命值（选择怪物ID时自动填充，也可手动输入）
+                atkSpeed: 0.33, // 攻速（手动输入）
+                damageCoeff: 1, // 伤害系数（手动输入）
+                hpCoeff: 1, // 生命值倍率（手动输入）
+                spawnRate: 1, // 每秒出几只怪
+                duration: 10, // 持续多少秒
+                coinReward: 0 // 击杀怪物获得的银币奖励
+            };
+        }
+
+        // 武器和技能升级表
+        let weaponCostTable = []; // 武器升级消耗表 [{level: 0, cost: 10, damageCoeff: 1.0}, ...]
+        let skillCostTable = []; // 技能升级消耗表 [{level: 0, cost: 10, damageCoeff: 1.0}, ...]
+
+        // 波次战斗中的银币和升级状态
+        let waveBattleCoins = 0; // 当前银币
+        let weaponLevel = 0; // 当前武器等级
+        let skillLevel = 0; // 当前技能等级
+
         // 平台属性配置
         let platformConfig = {
             heroCount: 0,        // 局外英雄数量
@@ -1056,6 +1540,24 @@
             totalDamageDealt: 0,
             totalDamageTaken: 0,
             overflowDamage: 0 // 溢出伤害，会传递到下一只怪物
+        };
+
+        // 波次战斗状态（用于可视化模拟）
+        let waveBattleState = {
+            isRunning: false,
+            startTime: null,
+            elapsedTime: 0,
+            characters: [],
+            monsters: [],
+            currentWave: 0, // 当前波次（1-20）
+            waveStartTime: 0, // 当前波次开始时间
+            waveSpawnedCount: 0, // 当前波次已出怪物数
+            waveTotalCount: 0, // 当前波次总怪物数
+            nextSpawnTime: 0, // 下次出怪时间
+            monsterIdCounter: 0,
+            totalMonstersKilled: 0,
+            totalDamageDealt: 0,
+            totalDamageTaken: 0
         };
 
         // 加载英雄表（全局函数）
@@ -1363,6 +1865,7 @@
                     updateMonsterTableInfo();
                     updateMonsterSelect();
                     updateStageMonsterSelects(); // 更新关卡怪物选择下拉框
+                    updateBattleWaveMonsterSelects(); // 更新波次怪物选择下拉框
                     
                     showMessage(`成功加载${monsterTable.length}个怪物，已保存到本地`, 'success');
                 } catch (error) {
@@ -1371,6 +1874,244 @@
                 }
             };
             reader.readAsArrayBuffer(file);
+        };
+
+        // 加载武器技能升级表（全局函数）
+        window.loadUpgradeTable = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 查找RogueWpnCost和RogueSkillCost页签
+                    const weaponSheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase() === 'roguewpncost' || name.toLowerCase().includes('roguewpncost')
+                    );
+                    const skillSheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase() === 'rogueskillcost' || name.toLowerCase().includes('rogueskillcost')
+                    );
+                    
+                    if (!weaponSheetName) {
+                        showMessage('未找到RogueWpnCost页签', 'error');
+                        return;
+                    }
+                    if (!skillSheetName) {
+                        showMessage('未找到RogueSkillCost页签', 'error');
+                        return;
+                    }
+                    
+                    // 读取武器升级表（跳过前5行表头）
+                    const weaponSheet = workbook.Sheets[weaponSheetName];
+                    const weaponJsonData = XLSX.utils.sheet_to_json(weaponSheet, { 
+                        header: 1,
+                        defval: '',
+                        range: 5 // 跳过前5行
+                    });
+                    
+                    weaponCostTable = [];
+                    console.log('=== 武器升级表读取 ===');
+                    weaponJsonData.forEach((row, index) => {
+                        if (row.length >= 3) {
+                            const level = parseInt(row[1]) || 0; // B列：第几次购买（从0开始）
+                            const cost = parseFloat(row[2]) || 0; // C列：银币消耗
+                            const rawEValue = row[4]; // E列原始值
+                            const damageCoeff = parseFloat(row[4]) || 1; // E列：武器伤害系数
+                            
+                            // 输出读取的内容
+                            console.log(`行${index + 6} (跳过5行表头): 等级=${level}, 消耗=${cost}, E列原始值=${rawEValue}, 伤害系数=${damageCoeff}`);
+                            
+                            if (!isNaN(level) && !isNaN(cost)) {
+                                weaponCostTable.push({ level, cost, damageCoeff });
+                            }
+                        }
+                    });
+                    console.log(`总共读取 ${weaponCostTable.length} 条武器升级数据`);
+                    console.log('武器升级表内容:', weaponCostTable);
+                    
+                    // 读取技能升级表（跳过前5行表头）
+                    const skillSheet = workbook.Sheets[skillSheetName];
+                    const skillJsonData = XLSX.utils.sheet_to_json(skillSheet, { 
+                        header: 1,
+                        defval: '',
+                        range: 5 // 跳过前5行
+                    });
+                    
+                    skillCostTable = [];
+                    console.log('=== 技能升级表读取 ===');
+                    skillJsonData.forEach((row, index) => {
+                        if (row.length >= 3) {
+                            const level = parseInt(row[1]) || 0; // B列：第几次购买（从0开始）
+                            const cost = parseFloat(row[2]) || 0; // C列：银币消耗
+                            const rawEValue = row[4]; // E列原始值
+                            const damageCoeff = parseFloat(row[4]) || 1; // E列：技能升级伤害系数
+                            
+                            // 输出读取的内容
+                            console.log(`行${index + 6} (跳过5行表头): 等级=${level}, 消耗=${cost}, E列原始值=${rawEValue}, 伤害系数=${damageCoeff}`);
+                            
+                            if (!isNaN(level) && !isNaN(cost)) {
+                                skillCostTable.push({ level, cost, damageCoeff });
+                            }
+                        }
+                    });
+                    console.log(`总共读取 ${skillCostTable.length} 条技能升级数据`);
+                    console.log('技能升级表内容:', skillCostTable);
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('weaponCostTable', JSON.stringify(weaponCostTable));
+                    localStorage.setItem('skillCostTable', JSON.stringify(skillCostTable));
+                    
+                    // 更新显示
+                    updateUpgradeTableInfo();
+                    
+                    showMessage(`成功加载武器升级表（${weaponCostTable.length}条）和技能升级表（${skillCostTable.length}条）`, 'success');
+                } catch (error) {
+                    console.error('加载升级表失败:', error);
+                    showMessage('加载升级表失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // 加载保存的升级表
+        function loadSavedUpgradeTable() {
+            try {
+                const savedWeaponTable = localStorage.getItem('weaponCostTable');
+                const savedSkillTable = localStorage.getItem('skillCostTable');
+                
+                if (savedWeaponTable) {
+                    weaponCostTable = JSON.parse(savedWeaponTable);
+                }
+                if (savedSkillTable) {
+                    skillCostTable = JSON.parse(savedSkillTable);
+                }
+                
+                if (weaponCostTable.length > 0 || skillCostTable.length > 0) {
+                    updateUpgradeTableInfo();
+                }
+            } catch (error) {
+                console.error('加载保存的升级表失败:', error);
+            }
+        }
+
+        // 更新升级表信息显示
+        function updateUpgradeTableInfo() {
+            const statusEl = document.getElementById('upgradeTableStatus');
+            const infoEl = document.getElementById('upgradeTableInfo');
+            
+            if (weaponCostTable.length > 0 || skillCostTable.length > 0) {
+                statusEl.textContent = `已加载武器表（${weaponCostTable.length}条）和技能表（${skillCostTable.length}条）`;
+                statusEl.style.color = '#51cf66';
+                
+                let infoText = `武器升级表: ${weaponCostTable.length}条记录`;
+                if (weaponCostTable.length > 0) {
+                    const maxLevel = Math.max(...weaponCostTable.map(w => w.level));
+                    const maxCost = Math.max(...weaponCostTable.map(w => w.cost));
+                    infoText += ` | 最高等级: ${maxLevel}, 最高消耗: ${maxCost}`;
+                    
+                    // 显示武器系数详情
+                    infoText += `<br><br><strong>武器系数详情（从E列读取）：</strong><br>`;
+                    weaponCostTable.sort((a, b) => a.level - b.level).forEach(weapon => {
+                        const coeff = (weapon.damageCoeff !== undefined) ? parseFloat(weapon.damageCoeff) : 1.0;
+                        infoText += `等级 ${weapon.level}: 消耗 ${weapon.cost} 银币, 伤害系数 ${coeff.toFixed(2)}<br>`;
+                    });
+                }
+                infoText += `<br><br>技能升级表: ${skillCostTable.length}条记录`;
+                if (skillCostTable.length > 0) {
+                    const maxLevel = Math.max(...skillCostTable.map(s => s.level));
+                    const maxCost = Math.max(...skillCostTable.map(s => s.cost));
+                    infoText += ` | 最高等级: ${maxLevel}, 最高消耗: ${maxCost}`;
+                    
+                    // 显示技能系数详情
+                    infoText += `<br><br><strong>技能系数详情（从E列读取）：</strong><br>`;
+                    skillCostTable.sort((a, b) => a.level - b.level).forEach(skill => {
+                        const coeff = (skill.damageCoeff !== undefined) ? parseFloat(skill.damageCoeff) : 1.0;
+                        infoText += `等级 ${skill.level}: 消耗 ${skill.cost} 银币, 伤害系数 ${coeff.toFixed(2)}<br>`;
+                    });
+                }
+                
+                // 更新武器升级系数查看器的下拉选项
+                updateWeaponLevelViewerOptions();
+                
+                infoEl.innerHTML = infoText;
+            } else {
+                statusEl.textContent = '未加载升级表';
+                statusEl.style.color = '#666';
+                infoEl.innerHTML = '';
+            }
+        }
+        
+        // 更新武器升级次数下拉选项
+        function updateWeaponLevelViewerOptions() {
+            const selectEl = document.getElementById('weaponLevelViewer');
+            if (!selectEl) return;
+            
+            // 清空现有选项（保留"请选择"）
+            selectEl.innerHTML = '<option value="-1">请选择</option>';
+            
+            if (weaponCostTable.length > 0) {
+                // 按等级排序
+                const sortedTable = [...weaponCostTable].sort((a, b) => a.level - b.level);
+                sortedTable.forEach(weapon => {
+                    const option = document.createElement('option');
+                    option.value = weapon.level;
+                    option.textContent = `升级次数 ${weapon.level}`;
+                    selectEl.appendChild(option);
+                });
+            }
+        }
+        
+        // 更新武器升级系数查看器显示
+        window.updateWeaponCoeffViewer = function() {
+            const selectEl = document.getElementById('weaponLevelViewer');
+            const infoEl = document.getElementById('weaponCoeffInfo');
+            const levelView = document.getElementById('currentWeaponLevelView');
+            const coeffView = document.getElementById('currentWeaponCoeffView');
+            const costView = document.getElementById('weaponUpgradeCostView');
+            const ratioView = document.getElementById('weaponUpgradeRatioView');
+            
+            if (!selectEl || !infoEl) return;
+            
+            const selectedLevel = parseInt(selectEl.value);
+            if (selectedLevel === -1) {
+                infoEl.style.display = 'none';
+                return;
+            }
+            
+            // 查找当前等级的数据
+            const currentWeaponData = weaponCostTable.find(w => w.level === selectedLevel);
+            if (!currentWeaponData) {
+                infoEl.style.display = 'none';
+                return;
+            }
+            
+            // 查找下一级的数据
+            const nextWeaponData = weaponCostTable.find(w => w.level === selectedLevel + 1);
+            
+            // 获取当前和下一级的伤害系数
+            const currentCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
+            const nextCoeff = (nextWeaponData && nextWeaponData.damageCoeff !== undefined) ? parseFloat(nextWeaponData.damageCoeff) : currentCoeff;
+            const upgradeRatio = currentCoeff > 0 ? nextCoeff / currentCoeff : 1.0;
+            const upgradePercent = ((upgradeRatio - 1) * 100).toFixed(1);
+            
+            // 更新显示
+            if (levelView) levelView.textContent = `Lv.${selectedLevel}`;
+            if (coeffView) coeffView.textContent = currentCoeff.toFixed(2);
+            if (costView) costView.textContent = `${currentWeaponData.cost} 银币`;
+            if (ratioView) {
+                if (nextWeaponData) {
+                    ratioView.textContent = `${upgradeRatio.toFixed(3)} (提升 ${upgradePercent > 0 ? '+' : ''}${upgradePercent}%)`;
+                    ratioView.style.color = upgradePercent > 0 ? '#51cf66' : '#ff6b6b';
+                } else {
+                    ratioView.textContent = '已达最高等级';
+                    ratioView.style.color = '#999';
+                }
+            }
+            
+            infoEl.style.display = 'block';
         };
 
         // 更新怪物表信息显示
@@ -2407,6 +3148,229 @@
             // 更新所有关卡的伤害信息（因为角色属性可能已改变）
             for (let stage = 1; stage <= 20; stage++) {
                 updateStageDamageInfo(stage);
+            }
+        }
+
+        // 初始化20波怪物数据输入界面
+        function initBattleWaveData() {
+            const grid = document.getElementById('battleWaveDataGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            for (let wave = 1; wave <= 20; wave++) {
+                const waveData = battleWaveData[wave] || {
+                    monsterId: '',
+                    attack: 10,
+                    defense: 5,
+                    hp: 50,
+                    atkSpeed: 0.33,
+                    damageCoeff: 1,
+                    hpCoeff: 1,
+                    spawnRate: 1,
+                    duration: 10
+                };
+                
+                // 获取怪物信息（如果已选择）
+                let monsterInfo = '';
+                if (waveData.monsterId && monsterTable.length > 0) {
+                    const monster = monsterTable.find(m => m.id === waveData.monsterId);
+                    if (monster) {
+                        monsterInfo = ` (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                    }
+                }
+                
+                const waveCard = document.createElement('div');
+                waveCard.id = `battle-wave-card-${wave}`;
+                waveCard.style.cssText = 'background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;';
+                waveCard.innerHTML = `
+                    <div style="font-weight: 600; color: #333; margin-bottom: 10px; font-size: 1.05em;">第 ${wave} 波</div>
+                    <div class="input-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 0.9em;">怪物ID</label>
+                        <select id="battle-wave-${wave}-monster" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;">
+                            <option value="">手动输入</option>
+                        </select>
+                        <div style="font-size: 0.8em; color: #999; margin-top: 4px;" id="battle-wave-${wave}-monster-info">${monsterInfo}</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">攻击力</label>
+                            <input type="number" id="battle-wave-${wave}-attack" min="0" value="${waveData.attack}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">防御力</label>
+                            <input type="number" id="battle-wave-${wave}-defense" min="0" value="${waveData.defense}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">生命值</label>
+                            <input type="number" id="battle-wave-${wave}-hp" min="0" value="${waveData.hp}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">攻速</label>
+                            <input type="number" id="battle-wave-${wave}-atkSpeed" min="0.1" max="10" step="0.01" value="${waveData.atkSpeed}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">伤害系数</label>
+                            <input type="number" id="battle-wave-${wave}-damageCoeff" min="0" step="0.01" value="${waveData.damageCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 0.85em;">生命值倍率</label>
+                            <input type="number" id="battle-wave-${wave}-hpCoeff" min="0" step="0.01" value="${waveData.hpCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
+                        <div class="input-group">
+                            <label style="font-size: 0.9em;">每秒出几只</label>
+                            <input type="number" id="battle-wave-${wave}-spawnRate" min="0.1" max="100" step="0.1" value="${waveData.spawnRate}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 0.9em;">持续多少秒</label>
+                            <input type="number" id="battle-wave-${wave}-duration" min="1" max="1000" step="1" value="${waveData.duration}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div class="input-group">
+                            <label style="font-size: 0.9em;">击杀银币奖励</label>
+                            <input type="number" id="battle-wave-${wave}-coinReward" min="0" value="${waveData.coinReward || 0}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                        <div>总怪物数: <span id="battle-wave-${wave}-total-count">-</span></div>
+                    </div>
+                `;
+                grid.appendChild(waveCard);
+            }
+            
+            // 更新所有波次怪物选择下拉框
+            updateBattleWaveMonsterSelects();
+            
+            // 更新所有波次的总怪物数显示
+            updateBattleWaveTotalCounts();
+        }
+
+        // 更新所有波次怪物选择下拉框
+        function updateBattleWaveMonsterSelects() {
+            for (let wave = 1; wave <= 20; wave++) {
+                const select = document.getElementById(`battle-wave-${wave}-monster`);
+                if (!select) continue;
+                
+                // 保存当前选择的值
+                const currentValue = select.value || battleWaveData[wave]?.monsterId || '';
+                
+                // 清空并重新填充
+                select.innerHTML = '<option value="">手动输入</option>';
+                
+                if (monsterTable.length > 0) {
+                    // 按ID排序
+                    const sortedMonsters = [...monsterTable].sort((a, b) => {
+                        const idA = parseInt(a.id) || 0;
+                        const idB = parseInt(b.id) || 0;
+                        return idA - idB;
+                    });
+                    
+                    sortedMonsters.forEach(monster => {
+                        const option = document.createElement('option');
+                        option.value = monster.id;
+                        option.textContent = `怪物 #${monster.id} (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                        select.appendChild(option);
+                    });
+                }
+                
+                // 恢复之前的选择
+                if (currentValue) {
+                    select.value = currentValue;
+                    updateBattleWaveData(wave);
+                }
+            }
+        }
+
+        // 更新波次数据（全局函数）
+        window.updateBattleWaveData = function(wave) {
+            const monsterSelect = document.getElementById(`battle-wave-${wave}-monster`);
+            const attackInput = document.getElementById(`battle-wave-${wave}-attack`);
+            const defenseInput = document.getElementById(`battle-wave-${wave}-defense`);
+            const hpInput = document.getElementById(`battle-wave-${wave}-hp`);
+            const atkSpeedInput = document.getElementById(`battle-wave-${wave}-atkSpeed`);
+            const damageCoeffInput = document.getElementById(`battle-wave-${wave}-damageCoeff`);
+            const hpCoeffInput = document.getElementById(`battle-wave-${wave}-hpCoeff`);
+            const spawnRateInput = document.getElementById(`battle-wave-${wave}-spawnRate`);
+            const durationInput = document.getElementById(`battle-wave-${wave}-duration`);
+            const coinRewardInput = document.getElementById(`battle-wave-${wave}-coinReward`);
+            const monsterInfo = document.getElementById(`battle-wave-${wave}-monster-info`);
+            
+            if (!monsterSelect || !attackInput || !defenseInput || !hpInput || 
+                !atkSpeedInput || !damageCoeffInput || !hpCoeffInput ||
+                !spawnRateInput || !durationInput) return;
+            
+            // 更新配置
+            battleWaveData[wave] = {
+                monsterId: monsterSelect.value || '',
+                attack: parseFloat(attackInput.value) || 10,
+                defense: parseFloat(defenseInput.value) || 5,
+                hp: parseFloat(hpInput.value) || 50,
+                atkSpeed: parseFloat(atkSpeedInput.value) || 0.33,
+                damageCoeff: parseFloat(damageCoeffInput.value) || 1,
+                hpCoeff: parseFloat(hpCoeffInput.value) || 1,
+                spawnRate: parseFloat(spawnRateInput.value) || 1,
+                duration: parseFloat(durationInput.value) || 10,
+                coinReward: coinRewardInput ? (parseFloat(coinRewardInput.value) || 0) : 0
+            };
+            
+            // 如果选择了怪物ID，自动填充攻防血
+            if (battleWaveData[wave].monsterId && monsterTable.length > 0) {
+                const monster = monsterTable.find(m => m.id === battleWaveData[wave].monsterId);
+                if (monster) {
+                    battleWaveData[wave].attack = monster.baseAttack || 10;
+                    battleWaveData[wave].defense = monster.baseDefense || 5;
+                    battleWaveData[wave].hp = monster.baseHp || 50;
+                    
+                    // 更新输入框
+                    attackInput.value = battleWaveData[wave].attack;
+                    defenseInput.value = battleWaveData[wave].defense;
+                    hpInput.value = battleWaveData[wave].hp;
+                    
+                    // 更新怪物信息显示
+                    if (monsterInfo) {
+                        monsterInfo.textContent = ` (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                        monsterInfo.style.color = '#51cf66';
+                    }
+                } else {
+                    if (monsterInfo) {
+                        monsterInfo.textContent = ' (怪物不存在)';
+                        monsterInfo.style.color = '#f44336';
+                    }
+                }
+            } else {
+                if (monsterInfo) {
+                    monsterInfo.textContent = '';
+                }
+            }
+            
+            // 更新总怪物数显示
+            updateBattleWaveTotalCount(wave);
+        };
+
+        // 更新单个波次的总怪物数显示
+        function updateBattleWaveTotalCount(wave) {
+            const totalCountEl = document.getElementById(`battle-wave-${wave}-total-count`);
+            if (!totalCountEl) return;
+            
+            const waveData = battleWaveData[wave];
+            if (!waveData) {
+                totalCountEl.textContent = '-';
+                return;
+            }
+            
+            const totalCount = Math.floor(waveData.spawnRate * waveData.duration);
+            totalCountEl.textContent = totalCount;
+        }
+
+        // 更新所有波次的总怪物数显示
+        function updateBattleWaveTotalCounts() {
+            for (let wave = 1; wave <= 20; wave++) {
+                updateBattleWaveTotalCount(wave);
             }
         }
 
@@ -4034,20 +4998,88 @@
         }
 
         // 显示伤害数字动画
-        function showDamageNumber(elementId, text, isHeal) {
-            const element = document.getElementById(elementId);
+        // 显示伤害数字动画（兼容两种调用方式：elementId字符串 或 element对象）
+        function showDamageNumber(elementOrId, damageOrText, isHeal = false) {
+            let element = null;
+            let damageText = '';
+            
+            // 判断第一个参数是字符串ID还是DOM元素
+            if (typeof elementOrId === 'string') {
+                // 旧版本调用：showDamageNumber(elementId, text, isHeal)
+                element = document.getElementById(elementOrId);
+                damageText = damageOrText; // 第二个参数直接是文本
+            } else if (elementOrId && typeof elementOrId.getBoundingClientRect === 'function') {
+                // 新版本调用：showDamageNumber(element, damage, isHeal)
+                element = elementOrId;
+                const damage = typeof damageOrText === 'number' ? damageOrText : parseFloat(damageOrText) || 0;
+                damageText = isHeal ? `+${damage.toFixed(0)}` : `-${damage.toFixed(0)}`;
+            } else {
+                return; // 无效参数
+            }
+            
             if (!element) return;
 
-            const damageEl = document.createElement('div');
-            damageEl.className = isHeal ? 'heal-number' : 'damage-number';
-            damageEl.textContent = text;
-            element.appendChild(damageEl);
-
-            setTimeout(() => {
-                if (damageEl.parentNode) {
-                    damageEl.parentNode.removeChild(damageEl);
+            // 检查是否有波次战斗场景（优先）
+            let battleScene = null;
+            let isInWaveBattle = false;
+            
+            // 检查是否在波次战斗中进行
+            if (typeof waveBattleState !== 'undefined' && waveBattleState && waveBattleState.isRunning) {
+                battleScene = document.getElementById('waveBattleScene');
+                if (battleScene) {
+                    // 检查元素是否在波次战斗区域内
+                    const waveBattleArea = document.getElementById('waveBattleArea');
+                    if (waveBattleArea && (waveBattleArea.contains(element) || element.closest('#waveBattleArea'))) {
+                        isInWaveBattle = true;
+                    }
                 }
-            }, 1000);
+            }
+            
+            // 如果没有波次战斗场景，检查普通战斗场景
+            if (!battleScene || !isInWaveBattle) {
+                const normalBattleScene = document.getElementById('battleScene');
+                if (normalBattleScene && normalBattleScene.contains(element)) {
+                    battleScene = normalBattleScene;
+                    isInWaveBattle = false;
+                }
+            }
+            
+            if (battleScene && (isInWaveBattle || battleScene.contains(element))) {
+                // 战斗场景模式：在战斗场景中显示
+                const rect = element.getBoundingClientRect();
+                const sceneRect = battleScene.getBoundingClientRect();
+                const x = rect.left - sceneRect.left + rect.width / 2;
+                const y = rect.top - sceneRect.top;
+                
+                const damageEl = document.createElement('div');
+                damageEl.className = isHeal ? 'heal-number' : 'damage-number';
+                damageEl.textContent = damageText;
+                damageEl.style.left = x + 'px';
+                damageEl.style.top = y + 'px';
+                damageEl.style.position = 'absolute';
+                damageEl.style.zIndex = '1000';
+                damageEl.style.pointerEvents = 'none';
+                
+                battleScene.appendChild(damageEl);
+                
+                setTimeout(() => {
+                    if (damageEl.parentNode) {
+                        damageEl.parentNode.removeChild(damageEl);
+                    }
+                }, 1000);
+            } else {
+                // 普通模式：在元素内部显示
+                const damageEl = document.createElement('div');
+                damageEl.className = isHeal ? 'heal-number' : 'damage-number';
+                damageEl.textContent = damageText;
+                element.appendChild(damageEl);
+
+                setTimeout(() => {
+                    if (damageEl.parentNode) {
+                        damageEl.parentNode.removeChild(damageEl);
+                    }
+                }, 1000);
+            }
         }
 
         // 更新角色状态显示
@@ -4141,12 +5173,852 @@
 
         // 添加日志
         function addLog(message) {
-            const log = document.getElementById('battleLog');
+            // 优先使用波次战斗日志（如果波次战斗正在进行），否则使用普通战斗日志
+            let log = null;
+            if (waveBattleState.isRunning) {
+                log = document.getElementById('waveBattleLog');
+            }
+            if (!log) {
+                log = document.getElementById('battleLog');
+            }
+            if (!log) return;
             const entry = document.createElement('div');
             entry.className = 'log-entry';
             entry.innerHTML = message;
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
+        }
+
+        // 开始波次战斗（可视化模拟）
+        window.startWaveBattle = function() {
+            if (waveBattleState.isRunning) {
+                return;
+            }
+
+            // 检查是否有配置的波次
+            let hasWaveConfig = false;
+            for (let wave = 1; wave <= 20; wave++) {
+                if (battleWaveData[wave] && (battleWaveData[wave].monsterId || battleWaveData[wave].attack > 0)) {
+                    hasWaveConfig = true;
+                    break;
+                }
+            }
+
+            if (!hasWaveConfig) {
+                showMessage('请先配置至少一波怪物数据', 'error');
+                return;
+            }
+
+            // 从界面读取最新的平台属性配置并更新
+            platformConfig.heroCount = parseInt(document.getElementById('platformHeroCount')?.value) || 0;
+            platformConfig.heroLevelSum = parseInt(document.getElementById('platformHeroLevelSum')?.value) || 0;
+            platformConfig.attackCoeff = parseFloat(document.getElementById('platformAttackCoeff')?.value) || 0;
+            platformConfig.defenseCoeff = parseFloat(document.getElementById('platformDefenseCoeff')?.value) || 0;
+            platformConfig.hpCoeff = parseFloat(document.getElementById('platformHpCoeff')?.value) || 0;
+            
+            // 从界面读取最新的车辆属性配置并更新
+            vehicleConfig.attack = parseInt(document.getElementById('vehicleAttack')?.value) || 0;
+            vehicleConfig.defense = parseInt(document.getElementById('vehicleDefense')?.value) || 0;
+            vehicleConfig.hp = parseInt(document.getElementById('vehicleHp')?.value) || 0;
+            
+            // 重新应用所有角色的属性（确保包含最新的装备、平台、车辆加成）
+            characters.forEach(char => {
+                applyJobEquipmentStats(char);
+            });
+
+            // 重置银币和升级信息
+            waveBattleCoins = 0;
+            weaponLevel = 0;
+            skillLevel = 0;
+            
+            // 重置波次战斗状态
+            waveBattleState = {
+                isRunning: true,
+                startTime: Date.now(),
+                elapsedTime: 0,
+                characters: characters.map(char => ({
+                    ...char,
+                    baseAttack: char.attack, // 保存基础攻击力
+                    hp: char.maxHp,
+                    isAlive: true,
+                    lastAttackTime: 0,
+                    lastHealTime: null,
+                    finalHealRate: char.finalHealRate || 0,
+                    deathTime: null,
+                    skillDamage: 0 // 重置技能伤害加成
+                })),
+                monsters: [],
+                currentWave: 0,
+                waveStartTime: 0,
+                waveSpawnedCount: 0,
+                waveTotalCount: 0,
+                nextSpawnTime: 0,
+                monsterIdCounter: 0,
+                totalMonstersKilled: 0,
+                totalDamageDealt: 0,
+                totalDamageTaken: 0
+            };
+
+            // 显示战斗区域（在tab-battle页签内）
+            const waveBattleArea = document.getElementById('waveBattleArea');
+            if (waveBattleArea) {
+                waveBattleArea.style.display = 'block';
+            }
+            
+            // 清空战斗日志
+            const log = document.getElementById('battleLog');
+            if (log) log.innerHTML = '';
+
+            // 更新按钮状态
+            const startBtn = document.getElementById('startWaveBattleBtn');
+            const stopBtn = document.getElementById('stopWaveBattleBtn');
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = 'inline-block';
+
+            // 显示波次信息
+            const info = document.getElementById('waveBattleInfo');
+            if (info) info.style.display = 'block';
+
+            // 显示战斗UI面板（仅波次战斗）
+            const uiPanel = document.getElementById('waveBattleUIPanel');
+            if (uiPanel) {
+                uiPanel.style.display = 'block';
+            }
+
+            // 开始第一波（这会在内部调用 updateBattleScene）
+            startNextWave();
+            
+            // 初始化可视化场景（在开始第一波后立即调用）
+            updateBattleScene();
+            
+            // 更新银币和升级按钮显示（确保在显示UI面板后更新）
+            updateCoinsDisplay();
+            updateUpgradeButtons();
+            
+            // 更新战斗统计显示
+            updateWaveBattleDisplay();
+            
+            // 滚动到战斗区域
+            if (waveBattleArea) {
+                setTimeout(() => {
+                    waveBattleArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+
+            // 开始战斗循环
+            waveBattleLoop();
+        };
+
+        // 停止波次战斗
+        window.stopWaveBattle = function() {
+            if (!waveBattleState.isRunning) {
+                return;
+            }
+
+            waveBattleState.isRunning = false;
+
+            // 更新按钮状态
+            const startBtn = document.getElementById('startWaveBattleBtn');
+            const stopBtn = document.getElementById('stopWaveBattleBtn');
+            if (startBtn) startBtn.style.display = 'inline-block';
+            if (stopBtn) stopBtn.style.display = 'none';
+
+            const status = document.getElementById('waveBattleStatus');
+            if (status) status.textContent = '模拟已停止';
+
+            addLog(`<span style="color: #ffc107; font-weight: bold;">波次战斗已手动停止！</span>`);
+            addLog(`总统计：击败怪物 ${waveBattleState.totalMonstersKilled}，伤害输出 ${waveBattleState.totalDamageDealt}，战斗时长 ${formatTime(waveBattleState.elapsedTime)}`);
+        };
+
+        // 开始下一波
+        function startNextWave() {
+            // 查找下一个有配置的波次
+            while (waveBattleState.currentWave < 20) {
+                waveBattleState.currentWave++;
+                
+                const waveData = battleWaveData[waveBattleState.currentWave];
+                if (waveData && (waveData.monsterId || waveData.attack > 0)) {
+                    // 找到有配置的波次，开始这一波
+                    break;
+                }
+            }
+            
+            if (waveBattleState.currentWave > 20) {
+                // 所有波次完成
+                waveBattleState.isRunning = false;
+                addLog(`<span style="color: #51cf66; font-weight: bold;">所有20波怪物已完成！</span>`);
+                addLog(`总统计：击败怪物 ${waveBattleState.totalMonstersKilled}，伤害输出 ${waveBattleState.totalDamageDealt}，战斗时长 ${formatTime(waveBattleState.elapsedTime)}`);
+                
+                // 更新按钮状态
+                const startBtn = document.getElementById('startWaveBattleBtn');
+                const stopBtn = document.getElementById('stopWaveBattleBtn');
+                if (startBtn) startBtn.style.display = 'inline-block';
+                if (stopBtn) stopBtn.style.display = 'none';
+                
+                const status = document.getElementById('waveBattleStatus');
+                if (status) status.textContent = '所有波次已完成';
+                
+                return;
+            }
+
+            const waveData = battleWaveData[waveBattleState.currentWave];
+
+            waveBattleState.waveStartTime = waveBattleState.elapsedTime;
+            waveBattleState.waveSpawnedCount = 0;
+            waveBattleState.waveTotalCount = Math.floor(waveData.spawnRate * waveData.duration);
+            waveBattleState.nextSpawnTime = Date.now();
+
+            // 更新显示
+            updateWaveBattleInfo();
+            
+            // 更新可视化场景（显示当前波次）
+            updateBattleScene();
+
+            addLog(`<span style="color: #667eea; font-weight: bold;">========== 第 ${waveBattleState.currentWave} 波开始 ==========</span>`);
+            addLog(`怪物属性：攻击 ${waveData.attack}，防御 ${waveData.defense}，生命 ${waveData.hp}，攻速 ${waveData.atkSpeed}，伤害系数 ${waveData.damageCoeff}，生命值倍率 ${waveData.hpCoeff}`);
+            addLog(`刷新速度：${waveData.spawnRate} 只/秒，持续时间：${waveData.duration} 秒，总怪物数：${waveBattleState.waveTotalCount}`);
+        }
+
+        // 生成波次怪物
+        function spawnWaveMonster() {
+            if (waveBattleState.currentWave <= 0 || waveBattleState.currentWave > 20) {
+                return;
+            }
+
+            const waveData = battleWaveData[waveBattleState.currentWave];
+            if (!waveData) {
+                return;
+            }
+
+            // 检查是否已经出完当前波次的所有怪物
+            if (waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount) {
+                return;
+            }
+
+            // 检查是否超过持续时间
+            const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+            if (waveElapsedTime >= waveData.duration) {
+                return;
+            }
+
+            waveBattleState.monsterIdCounter++;
+            
+            // 应用生命值倍率
+            const actualHp = Math.floor(waveData.hp * waveData.hpCoeff);
+            
+            const monster = {
+                id: waveBattleState.monsterIdCounter,
+                wave: waveBattleState.currentWave,
+                attack: waveData.attack,
+                defense: waveData.defense,
+                hp: actualHp,
+                maxHp: actualHp,
+                atkSpeed: waveData.atkSpeed,
+                damageCoeff: waveData.damageCoeff,
+                coinReward: waveData.coinReward || 0, // 击杀获得的银币
+                isAlive: true,
+                lastAttackTime: 0
+            };
+
+            waveBattleState.monsters.push(monster);
+            waveBattleState.waveSpawnedCount++;
+
+            addLog(`[${formatTime(waveBattleState.elapsedTime)}] 第${waveBattleState.currentWave}波 怪物 #${monster.id} 出现！`);
+
+            // 计算下次出怪时间
+            const spawnInterval = 1000 / waveData.spawnRate;
+            waveBattleState.nextSpawnTime = Date.now() + spawnInterval;
+
+            // 更新显示
+            updateWaveBattleInfo();
+            updateBattleScene(); // 更新可视化场景
+        }
+
+        // 波次战斗循环
+        function waveBattleLoop() {
+            if (!waveBattleState.isRunning) {
+                return;
+            }
+
+            const now = Date.now();
+            waveBattleState.elapsedTime = (now - waveBattleState.startTime) / 1000;
+
+            // 检查是否需要开始下一波（当前波次怪物出完即可开始下一波，无需等待怪物全部死亡）
+            if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
+                const waveData = battleWaveData[waveBattleState.currentWave];
+                if (waveData) {
+                    const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+                    
+                    // 如果当前波次持续时间已到且怪物已出完，立即开始下一波
+                    if (waveElapsedTime >= waveData.duration && 
+                        waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount) {
+                        addLog(`<span style="color: #51cf66;">第 ${waveBattleState.currentWave} 波完成！开始下一波...</span>`);
+                        startNextWave();
+                    }
+                }
+            }
+
+            // 生成怪物（如果当前波次还在持续时间内）
+            if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
+                const waveData = battleWaveData[waveBattleState.currentWave];
+                if (waveData && now >= waveBattleState.nextSpawnTime) {
+                    spawnWaveMonster();
+                }
+            }
+
+            // 角色攻击
+            waveBattleState.characters.forEach(char => {
+                if (char.isAlive && waveBattleState.monsters.length > 0) {
+                    const timeSinceLastAttack = (now - char.lastAttackTime) / 1000;
+                    const attackInterval = 1 / char.atkSpeed;
+
+                    if (timeSinceLastAttack >= attackInterval) {
+                        characterAttackWave(char);
+                        char.lastAttackTime = now;
+                    }
+                }
+            });
+
+            // 角色回血（角色5）
+            waveBattleState.characters.forEach(char => {
+                if (char.isAlive && char.id === 5 && char.finalHealRate > 0) {
+                    const timeSinceLastHeal = (now - (char.lastHealTime || waveBattleState.startTime)) / 1000;
+                    if (timeSinceLastHeal >= 1.0) {
+                        const aliveChars = waveBattleState.characters.filter(c => c.isAlive);
+                        if (aliveChars.length > 0) {
+                            const targetChar = aliveChars.reduce((min, c) => {
+                                const minRatio = min.hp / min.maxHp;
+                                const cRatio = c.hp / c.maxHp;
+                                return cRatio < minRatio ? c : min;
+                            });
+
+                            if (targetChar.hp < targetChar.maxHp) {
+                                const healAmount = char.finalHealRate;
+                                targetChar.hp = Math.min(targetChar.maxHp, targetChar.hp + healAmount);
+                                addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span class="log-heal">${char.name}</span> 为 <span class="log-heal">${targetChar.name}</span> 恢复 ${healAmount.toFixed(2)} 点生命值`);
+                                
+                                // 显示回血动画和数字
+                                const targetSprite = document.getElementById(`char-sprite-${targetChar.id}`);
+                                if (targetSprite) {
+                                    // 显示回血数字
+                                    showDamageNumber(targetSprite, healAmount, true);
+                                }
+                            }
+                        }
+                        char.lastHealTime = now;
+                    }
+                }
+            });
+
+            // 怪物攻击
+            waveBattleState.monsters.forEach(monster => {
+                if (monster.isAlive) {
+                    const timeSinceLastAttack = (now - monster.lastAttackTime) / 1000;
+                    const attackInterval = 1 / monster.atkSpeed;
+
+                    if (timeSinceLastAttack >= attackInterval && waveBattleState.characters.some(c => c.isAlive)) {
+                        monsterAttackWave(monster);
+                        monster.lastAttackTime = now;
+                    }
+                }
+            });
+
+            // 清理死亡怪物
+            waveBattleState.monsters = waveBattleState.monsters.filter(monster => monster.isAlive);
+
+            // 检查战斗结束（所有角色死亡）
+            const allCharactersDead = !waveBattleState.characters.some(c => c.isAlive);
+            if (allCharactersDead) {
+                waveBattleState.isRunning = false;
+                addLog(`<span style="color: #f44336; font-weight: bold;">所有角色阵亡！战斗结束</span>`);
+                addLog(`总统计：击败怪物 ${waveBattleState.totalMonstersKilled}，伤害输出 ${waveBattleState.totalDamageDealt}，战斗时长 ${formatTime(waveBattleState.elapsedTime)}`);
+                
+                // 更新按钮状态
+                const startBtn = document.getElementById('startWaveBattleBtn');
+                const stopBtn = document.getElementById('stopWaveBattleBtn');
+                if (startBtn) startBtn.style.display = 'inline-block';
+                if (stopBtn) stopBtn.style.display = 'none';
+                
+                const status = document.getElementById('waveBattleStatus');
+                if (status) status.textContent = '战斗结束：所有角色阵亡';
+                
+                updateWaveBattleDisplay();
+                return;
+            }
+
+            // 更新显示
+            updateWaveBattleDisplay();
+            updateWaveBattleInfo();
+
+            // 继续循环
+            requestAnimationFrame(waveBattleLoop);
+        }
+
+        // 角色攻击（波次战斗）
+        function characterAttackWave(character) {
+            if (waveBattleState.monsters.length === 0) return;
+
+            // 攻击第一个存活的怪物
+            const target = waveBattleState.monsters.find(m => m.isAlive);
+            if (!target) return;
+
+            // 基础伤害计算
+            let baseDamage = Math.max(1, character.attack - target.defense);
+            
+            // 应用武器伤害系数
+            const currentWeaponData = weaponCostTable.find(w => w.level === weaponLevel);
+            const weaponDamageCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
+            baseDamage = baseDamage * weaponDamageCoeff;
+            
+            // 角色2、3、4的技能伤害加成
+            let finalDamage = baseDamage;
+            if ((character.id === 2 || character.id === 3 || character.id === 4) && character.skillDamage > 0) {
+                const skillBonus = baseDamage * (character.skillDamage / 100);
+                finalDamage = baseDamage + skillBonus;
+                finalDamage = Math.max(1, Math.floor(finalDamage));
+            }
+            
+            // 应用技能升级伤害系数（所有角色的最终伤害乘以技能升级伤害系数）
+            const currentSkillData = skillCostTable.find(s => s.level === skillLevel);
+            const skillDamageCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
+            finalDamage = finalDamage * skillDamageCoeff;
+            finalDamage = Math.max(1, Math.floor(finalDamage));
+            
+            target.hp -= finalDamage;
+            waveBattleState.totalDamageDealt += finalDamage;
+
+            let damageText = finalDamage === baseDamage 
+                ? `${finalDamage}`
+                : `${finalDamage}（基础${baseDamage.toFixed(1)} + 技能${(finalDamage - baseDamage).toFixed(1)}）`;
+            
+            addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span class="log-damage">${character.name}</span> 攻击 第${target.wave}波怪物 #${target.id}，造成 ${damageText} 点伤害`);
+
+            // 显示攻击动画
+            const charSprite = document.getElementById(`char-sprite-${character.id}`);
+            if (charSprite) {
+                charSprite.classList.remove('attacking');
+                void charSprite.offsetWidth; // 触发重排
+                charSprite.classList.add('attacking');
+                setTimeout(() => {
+                    charSprite.classList.remove('attacking');
+                }, 500);
+            }
+
+            // 显示受击动画和伤害数字
+            const monsterSprite = document.getElementById(`monster-sprite-${target.id}`);
+            if (monsterSprite) {
+                monsterSprite.classList.remove('hit');
+                void monsterSprite.offsetWidth;
+                monsterSprite.classList.add('hit');
+                setTimeout(() => {
+                    monsterSprite.classList.remove('hit');
+                }, 300);
+                
+                // 显示伤害数字
+                showDamageNumber(monsterSprite, finalDamage, false);
+            }
+
+            if (target.hp <= 0) {
+                target.hp = 0;
+                target.isAlive = false;
+                waveBattleState.totalMonstersKilled++;
+                
+                // 获得银币
+                const coinReward = target.coinReward || 0;
+                if (coinReward > 0) {
+                    waveBattleCoins += coinReward;
+                    updateCoinsDisplay();
+                    addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span class="log-kill">第${target.wave}波怪物 #${target.id} 被击败！获得 ${coinReward} 银币</span>`);
+                } else {
+                    addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span class="log-kill">第${target.wave}波怪物 #${target.id} 被击败！</span>`);
+                }
+                
+                // 怪物死亡动画
+                if (monsterSprite) {
+                    monsterSprite.classList.add('dead');
+                }
+            }
+        }
+
+        // 更新银币显示
+        function updateCoinsDisplay() {
+            // 只更新波次战斗的银币显示
+            const waveCoinsDisplay = document.getElementById('waveCoinsDisplay');
+            if (waveCoinsDisplay) {
+                waveCoinsDisplay.textContent = waveBattleCoins;
+            }
+            updateUpgradeButtons();
+        }
+
+        // 更新升级按钮状态
+        function updateUpgradeButtons() {
+            // 只使用波次战斗的按钮
+            const weaponBtn = document.getElementById('waveUpgradeWeaponBtn');
+            const skillBtn = document.getElementById('waveUpgradeSkillBtn');
+            const weaponInfo = document.getElementById('waveWeaponUpgradeInfo');
+            const skillInfo = document.getElementById('waveSkillUpgradeInfo');
+            
+            // 武器升级（从当前等级升级到下一级，读取当前等级对应的价格）
+            const nextWeaponLevel = weaponLevel + 1;
+            const weaponCost = weaponCostTable.find(w => w.level === weaponLevel);
+            const currentWeaponData = weaponCostTable.find(w => w.level === weaponLevel);
+            const nextWeaponData = weaponCostTable.find(w => w.level === nextWeaponLevel);
+            
+            if (weaponBtn && weaponInfo) {
+                if (weaponCost) {
+                    const canUpgrade = waveBattleCoins >= weaponCost.cost;
+                    weaponBtn.disabled = !canUpgrade;
+                    
+                    // 获取当前和下一级的伤害系数
+                    const currentCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
+                    const nextCoeff = (nextWeaponData && nextWeaponData.damageCoeff !== undefined) ? parseFloat(nextWeaponData.damageCoeff) : currentCoeff;
+                    const upgradeRatio = currentCoeff > 0 ? nextCoeff / currentCoeff : 1.0;
+                    
+                    weaponInfo.textContent = `Lv.${weaponLevel} (系数${currentCoeff.toFixed(2)}) → Lv.${nextWeaponLevel} (${weaponCost.cost}银币, +${((upgradeRatio - 1) * 100).toFixed(1)}%)`;
+                    // 根据是否可以升级设置颜色
+                    if (canUpgrade) {
+                        weaponBtn.style.color = '#51cf66'; // 绿色
+                    } else {
+                        weaponBtn.style.color = '#ff6b6b'; // 红色
+                    }
+                } else {
+                    weaponBtn.disabled = true;
+                    const currentCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
+                    weaponInfo.textContent = `Lv.${weaponLevel} (系数${currentCoeff.toFixed(2)}, 已满级)`;
+                    weaponBtn.style.color = '#ff6b6b'; // 红色（已满级）
+                }
+            }
+            
+            // 技能升级（从当前等级升级到下一级，读取当前等级对应的价格）
+            const nextSkillLevel = skillLevel + 1;
+            const skillCost = skillCostTable.find(s => s.level === skillLevel);
+            const currentSkillData = skillCostTable.find(s => s.level === skillLevel);
+            const nextSkillData = skillCostTable.find(s => s.level === nextSkillLevel);
+            
+            if (skillBtn && skillInfo) {
+                if (skillCost) {
+                    const canUpgrade = waveBattleCoins >= skillCost.cost;
+                    skillBtn.disabled = !canUpgrade;
+                    
+                    // 获取当前和下一级的伤害系数
+                    const currentCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
+                    const nextCoeff = (nextSkillData && nextSkillData.damageCoeff !== undefined) ? parseFloat(nextSkillData.damageCoeff) : currentCoeff;
+                    const upgradeRatio = currentCoeff > 0 ? nextCoeff / currentCoeff : 1.0;
+                    
+                    skillInfo.textContent = `Lv.${skillLevel} (系数${currentCoeff.toFixed(2)}) → Lv.${nextSkillLevel} (${skillCost.cost}银币, +${((upgradeRatio - 1) * 100).toFixed(1)}%)`;
+                    // 根据是否可以升级设置颜色
+                    if (canUpgrade) {
+                        skillBtn.style.color = '#51cf66'; // 绿色
+                    } else {
+                        skillBtn.style.color = '#ff6b6b'; // 红色
+                    }
+                } else {
+                    skillBtn.disabled = true;
+                    const currentCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
+                    skillInfo.textContent = `Lv.${skillLevel} (系数${currentCoeff.toFixed(2)}, 已满级)`;
+                    skillBtn.style.color = '#ff6b6b'; // 红色（已满级）
+                }
+            }
+        }
+
+        // 武器升级
+        window.upgradeWeapon = function() {
+            // 读取当前等级对应的价格（0级升级到1级，读取level=0的价格）
+            const weaponCost = weaponCostTable.find(w => w.level === weaponLevel);
+            
+            if (!weaponCost) {
+                showMessage('武器已达到最高等级', 'error');
+                return;
+            }
+            
+            if (waveBattleCoins < weaponCost.cost) {
+                showMessage(`银币不足！需要 ${weaponCost.cost} 银币，当前只有 ${waveBattleCoins} 银币`, 'error');
+                return;
+            }
+            
+            waveBattleCoins -= weaponCost.cost;
+            weaponLevel = weaponLevel + 1;
+            
+            // 获取当前等级的伤害系数
+            const currentWeaponData = weaponCostTable.find(w => w.level === weaponLevel);
+            const damageCoeff = (currentWeaponData && currentWeaponData.damageCoeff !== undefined) ? parseFloat(currentWeaponData.damageCoeff) : 1.0;
+            
+            updateCoinsDisplay();
+            addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span style="color: #667eea; font-weight: bold;">武器升级到 Lv.${weaponLevel}！消耗 ${weaponCost.cost} 银币，伤害系数 ${damageCoeff.toFixed(2)}</span>`);
+        };
+
+        // 技能升级
+        window.upgradeSkill = function() {
+            // 读取当前等级对应的价格（0级升级到1级，读取level=0的价格）
+            const skillCost = skillCostTable.find(s => s.level === skillLevel);
+            
+            if (!skillCost) {
+                showMessage('技能已达到最高等级', 'error');
+                return;
+            }
+            
+            if (waveBattleCoins < skillCost.cost) {
+                showMessage(`银币不足！需要 ${skillCost.cost} 银币，当前只有 ${waveBattleCoins} 银币`, 'error');
+                return;
+            }
+            
+            waveBattleCoins -= skillCost.cost;
+            skillLevel = skillLevel + 1;
+            
+            // 获取当前等级的伤害系数
+            const currentSkillData = skillCostTable.find(s => s.level === skillLevel);
+            const damageCoeff = (currentSkillData && currentSkillData.damageCoeff !== undefined) ? parseFloat(currentSkillData.damageCoeff) : 1.0;
+            
+            updateCoinsDisplay();
+            addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span style="color: #f093fb; font-weight: bold;">技能升级到 Lv.${skillLevel}！消耗 ${skillCost.cost} 银币，伤害系数 ${damageCoeff.toFixed(2)}</span>`);
+        };
+
+        // 怪物攻击（波次战斗）
+        function monsterAttackWave(monster) {
+            // 优先攻击角色1，按1~5顺序依次攻击
+            let target = null;
+            for (let i = 1; i <= 5; i++) {
+                const char = waveBattleState.characters.find(c => c.id === i && c.isAlive);
+                if (char) {
+                    target = char;
+                    break;
+                }
+            }
+
+            if (!target) return;
+
+            // 基础伤害计算
+            let baseDamage = Math.max(1, monster.attack - target.defense);
+            
+            // 应用伤害系数
+            let finalDamage = Math.floor(baseDamage * monster.damageCoeff);
+            finalDamage = Math.max(1, finalDamage);
+
+            // 角色1的减伤
+            if (target.id === 1 && target.damageReduction > 0) {
+                finalDamage = Math.floor(finalDamage * (1 - target.damageReduction / 100));
+                finalDamage = Math.max(1, finalDamage);
+            }
+
+            target.hp -= finalDamage;
+            waveBattleState.totalDamageTaken += finalDamage;
+
+            addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span class="log-damage-taken">第${monster.wave}波怪物 #${monster.id}</span> 攻击 <span class="log-damage-taken">${target.name}</span>，造成 ${finalDamage} 点伤害`);
+
+            // 显示怪物攻击动画
+            const monsterSprite = document.getElementById(`monster-sprite-${monster.id}`);
+            if (monsterSprite) {
+                monsterSprite.classList.remove('attacking');
+                void monsterSprite.offsetWidth; // 触发重排
+                monsterSprite.classList.add('attacking');
+                setTimeout(() => {
+                    monsterSprite.classList.remove('attacking');
+                }, 500);
+            }
+
+            // 显示角色受击动画和伤害数字
+            const charSprite = document.getElementById(`char-sprite-${target.id}`);
+            if (charSprite) {
+                charSprite.classList.remove('hit');
+                void charSprite.offsetWidth;
+                charSprite.classList.add('hit');
+                setTimeout(() => {
+                    charSprite.classList.remove('hit');
+                }, 300);
+                
+                // 显示伤害数字
+                showDamageNumber(charSprite, finalDamage, false);
+            }
+
+            if (target.hp <= 0) {
+                target.hp = 0;
+                target.isAlive = false;
+                target.deathTime = waveBattleState.elapsedTime;
+                addLog(`[${formatTime(waveBattleState.elapsedTime)}] <span style="color: #f44336; font-weight: bold;">${target.name} 阵亡！</span>`);
+                
+                // 角色死亡动画
+                if (charSprite) {
+                    charSprite.classList.add('dead');
+                }
+            }
+        }
+
+        // 获取角色头像emoji
+        function getCharacterEmoji(jobId) {
+            const jobEmojis = {
+                1: '🛡️', // 坦克
+                2: '⚔️', // 战士
+                3: '🏹', // 射手
+                4: '💚'  // 辅助
+            };
+            return jobEmojis[jobId] || '👤';
+        }
+
+        // 获取怪物头像emoji（根据怪物ID固定）
+        function getMonsterEmoji(monsterId) {
+            const monsterEmojis = ['👹', '👺', '👽', '🤖', '👾', '🎃', '🦹', '🦴', '🧟', '👻', '💀', '🧛'];
+            const index = (monsterId - 1) % monsterEmojis.length;
+            return monsterEmojis[index];
+        }
+
+        // 更新波次战斗显示
+        function updateWaveBattleDisplay() {
+            // 更新可视化战斗场景
+            updateBattleScene();
+            
+            // 更新角色面板（使用waveCharactersPanel）
+            const panel = document.getElementById('waveCharactersPanel');
+            if (panel && waveBattleState.characters && waveBattleState.characters.length > 0) {
+                panel.innerHTML = waveBattleState.characters.map(char => {
+                    const hpPercent = char.maxHp > 0 ? (char.hp / char.maxHp * 100) : 0;
+                    return `
+                        <div class="char-panel-item ${char.isAlive ? '' : 'dead'}" data-char-id="${char.id}">
+                            <div style="font-weight: 600; margin-bottom: 5px;">${char.name} [${JOB_NAMES[char.job]}]</div>
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">HP: ${char.hp.toFixed(0)} / ${char.maxHp.toFixed(0)} (${hpPercent.toFixed(1)}%)</div>
+                            <div class="hp-bar">
+                                <div class="hp-fill" style="width: ${hpPercent}%; background: ${char.isAlive ? '#51cf66' : '#f44336'};"></div>
+                            </div>
+                            <div style="font-size: 0.8em; color: #999; margin-top: 5px;">${char.isAlive ? '存活' : '阵亡'}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 更新战斗统计（使用waveBattleStats）
+            const stats = document.getElementById('waveBattleStats');
+            if (stats) {
+                const aliveCount = waveBattleState.characters.filter(c => c.isAlive).length;
+                const monsterCount = waveBattleState.monsters.filter(m => m.isAlive).length;
+                stats.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">战斗时长</div>
+                        <div class="stat-value">${formatTime(waveBattleState.elapsedTime)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">存活角色</div>
+                        <div class="stat-value">${aliveCount} / 5</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">当前怪物</div>
+                        <div class="stat-value">${monsterCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">击败怪物</div>
+                        <div class="stat-value">${waveBattleState.totalMonstersKilled}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">伤害输出</div>
+                        <div class="stat-value">${waveBattleState.totalDamageDealt}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">受到伤害</div>
+                        <div class="stat-value">${waveBattleState.totalDamageTaken}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // 更新可视化战斗场景
+        function updateBattleScene() {
+            // 更新波次指示器
+            const waveIndicator = document.getElementById('waveIndicator');
+            if (waveIndicator) {
+                if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
+                    waveIndicator.textContent = `第 ${waveBattleState.currentWave} 波`;
+                    waveIndicator.style.display = 'block';
+                } else {
+                    waveIndicator.style.display = 'none';
+                }
+            }
+
+            // 更新角色侧（使用waveCharactersSide）
+            const charactersSide = document.getElementById('waveCharactersSide');
+            if (charactersSide && waveBattleState.characters && waveBattleState.characters.length > 0) {
+                charactersSide.innerHTML = waveBattleState.characters.map(char => {
+                    const hpPercent = char.maxHp > 0 ? (char.hp / char.maxHp * 100) : 0;
+                    const jobClass = char.job === 1 ? 'tank' : char.job === 2 ? 'warrior' : char.job === 3 ? 'archer' : 'support';
+                    const emoji = getCharacterEmoji(char.job);
+                    
+                    return `
+                        <div class="character-sprite ${char.isAlive ? '' : 'dead'}" 
+                             id="char-sprite-${char.id}" 
+                             data-char-id="${char.id}"
+                             style="opacity: ${char.isAlive ? 1 : 0.5};">
+                            <div class="character-avatar ${jobClass}">${emoji}</div>
+                            <div class="character-info">
+                                <div class="character-name">${char.name} [${JOB_NAMES[char.job]}]</div>
+                                <div style="font-size: 0.85em; color: #666;">
+                                    HP: ${char.hp.toFixed(0)} / ${char.maxHp.toFixed(0)}
+                                </div>
+                                <div class="character-hp-bar">
+                                    <div class="character-hp-fill ${hpPercent < 30 ? 'low' : ''}" style="width: ${hpPercent}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (charactersSide && (!waveBattleState.characters || waveBattleState.characters.length === 0)) {
+                charactersSide.innerHTML = '<div style="color: rgba(255,255,255,0.7); font-size: 1.2em; text-align: center; width: 100%; padding: 20px;">等待角色初始化...</div>';
+            }
+
+            // 更新怪物侧（使用waveMonstersSide）
+            const monstersSide = document.getElementById('waveMonstersSide');
+            if (monstersSide) {
+                // 只显示存活的怪物
+                const aliveMonsters = waveBattleState.monsters.filter(m => m.isAlive);
+                if (aliveMonsters.length === 0) {
+                    monstersSide.innerHTML = '<div style="color: rgba(255,255,255,0.7); font-size: 1.2em; text-align: center; width: 100%; padding: 20px;">暂无怪物</div>';
+                } else {
+                    monstersSide.innerHTML = aliveMonsters.map(monster => {
+                        const hpPercent = monster.maxHp > 0 ? (monster.hp / monster.maxHp * 100) : 0;
+                        const emoji = getMonsterEmoji(monster.id);
+                        
+                        return `
+                            <div class="monster-sprite ${monster.isAlive ? '' : 'dead'}" 
+                                 id="monster-sprite-${monster.id}" 
+                                 data-monster-id="${monster.id}">
+                                <div class="monster-avatar">${emoji}</div>
+                                <div class="monster-hp-bar">
+                                    <div class="monster-hp-fill" style="width: ${hpPercent}%;"></div>
+                                </div>
+                                <div class="monster-id">#${monster.id}</div>
+                                <div style="font-size: 0.7em; color: #666; margin-top: 2px;">W${monster.wave}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        // 更新波次信息显示
+        function updateWaveBattleInfo() {
+            const currentWaveEl = document.getElementById('currentWaveNumber');
+            const spawnedEl = document.getElementById('currentWaveSpawned');
+            const totalEl = document.getElementById('currentWaveTotal');
+            const aliveEl = document.getElementById('currentWaveAlive');
+
+            if (currentWaveEl) {
+                currentWaveEl.textContent = waveBattleState.currentWave > 0 ? waveBattleState.currentWave : '-';
+            }
+            if (spawnedEl) {
+                spawnedEl.textContent = waveBattleState.waveSpawnedCount;
+            }
+            if (totalEl) {
+                totalEl.textContent = waveBattleState.waveTotalCount;
+            }
+            if (aliveEl) {
+                const aliveCount = waveBattleState.monsters.filter(m => m.wave === waveBattleState.currentWave && m.isAlive).length;
+                aliveEl.textContent = aliveCount;
+            }
+
+            const status = document.getElementById('waveBattleStatus');
+            if (status && waveBattleState.isRunning) {
+                if (waveBattleState.currentWave > 0 && waveBattleState.currentWave <= 20) {
+                    status.textContent = `进行中：第 ${waveBattleState.currentWave} 波`;
+                } else {
+                    status.textContent = '进行中';
+                }
+            }
         }
 
         // 格式化时间
@@ -4348,6 +6220,7 @@
                     updateMonsterTableInfo();
                     updateMonsterSelect();
                     updateStageMonsterSelects();
+                    updateBattleWaveMonsterSelects(); // 更新波次怪物选择下拉框
                     console.log('已同步怪物表，共', monsterTable.length, '个');
                 }
                 
@@ -4533,8 +6406,58 @@
                 platformConfig: JSON.parse(JSON.stringify(platformConfig)),
                 // 保存平台属性（车辆）配置
                 vehicleConfig: JSON.parse(JSON.stringify(vehicleConfig)),
-                // 保存关卡配置
-                stageConfig: JSON.parse(JSON.stringify(stageConfig)),
+            // 保存关卡配置
+            stageConfig: JSON.parse(JSON.stringify(stageConfig)),
+            
+            // 从界面读取最新的20波怪物数据输入配置
+            // 确保保存时读取界面上的最新值
+            battleWaveData: (function() {
+                const latestBattleWaveData = {};
+                for (let wave = 1; wave <= 20; wave++) {
+                    const monsterSelect = document.getElementById(`battle-wave-${wave}-monster`);
+                    const attackInput = document.getElementById(`battle-wave-${wave}-attack`);
+                    const defenseInput = document.getElementById(`battle-wave-${wave}-defense`);
+                    const hpInput = document.getElementById(`battle-wave-${wave}-hp`);
+                    const atkSpeedInput = document.getElementById(`battle-wave-${wave}-atkSpeed`);
+                    const damageCoeffInput = document.getElementById(`battle-wave-${wave}-damageCoeff`);
+                    const hpCoeffInput = document.getElementById(`battle-wave-${wave}-hpCoeff`);
+                    const spawnRateInput = document.getElementById(`battle-wave-${wave}-spawnRate`);
+                    const durationInput = document.getElementById(`battle-wave-${wave}-duration`);
+                    const coinRewardInput = document.getElementById(`battle-wave-${wave}-coinReward`);
+                    
+                    if (monsterSelect && attackInput && defenseInput && hpInput && 
+                        atkSpeedInput && damageCoeffInput && hpCoeffInput &&
+                        spawnRateInput && durationInput) {
+                        latestBattleWaveData[wave] = {
+                            monsterId: monsterSelect.value || '',
+                            attack: parseFloat(attackInput.value) || 10,
+                            defense: parseFloat(defenseInput.value) || 5,
+                            hp: parseFloat(hpInput.value) || 50,
+                            atkSpeed: parseFloat(atkSpeedInput.value) || 0.33,
+                            damageCoeff: parseFloat(damageCoeffInput.value) || 1,
+                            hpCoeff: parseFloat(hpCoeffInput.value) || 1,
+                            spawnRate: parseFloat(spawnRateInput.value) || 1,
+                            duration: parseFloat(durationInput.value) || 10,
+                            coinReward: coinRewardInput ? (parseFloat(coinRewardInput.value) || 0) : 0
+                        };
+                    } else {
+                        // 如果界面元素不存在，使用内存中的数据
+                        latestBattleWaveData[wave] = battleWaveData[wave] || {
+                            monsterId: '',
+                            attack: 10,
+                            defense: 5,
+                            hp: 50,
+                            atkSpeed: 0.33,
+                            damageCoeff: 1,
+                            hpCoeff: 1,
+                            spawnRate: 1,
+                            duration: 10,
+                            coinReward: 0
+                        };
+                    }
+                }
+                return latestBattleWaveData;
+            })(),
                 // 保存怪物属性
                 monsterConfig: {
                     spawnRate: parseFloat(document.getElementById('spawnRate').value) || 1, // 刷新速度
@@ -4751,6 +6674,30 @@
                 initStageConfig();
             }
 
+            // 加载20波怪物数据输入配置
+            if (scheme.battleWaveData) {
+                // 合并保存的20波怪物数据输入配置
+                for (let wave = 1; wave <= 20; wave++) {
+                    if (scheme.battleWaveData[wave]) {
+                        battleWaveData[wave] = {
+                            monsterId: scheme.battleWaveData[wave].monsterId || '',
+                            attack: scheme.battleWaveData[wave].attack !== undefined ? scheme.battleWaveData[wave].attack : 10,
+                            defense: scheme.battleWaveData[wave].defense !== undefined ? scheme.battleWaveData[wave].defense : 5,
+                            hp: scheme.battleWaveData[wave].hp !== undefined ? scheme.battleWaveData[wave].hp : 50,
+                            atkSpeed: scheme.battleWaveData[wave].atkSpeed !== undefined ? scheme.battleWaveData[wave].atkSpeed : 0.33,
+                            damageCoeff: scheme.battleWaveData[wave].damageCoeff !== undefined ? scheme.battleWaveData[wave].damageCoeff : 1,
+                            hpCoeff: scheme.battleWaveData[wave].hpCoeff !== undefined ? scheme.battleWaveData[wave].hpCoeff : 1,
+                            spawnRate: scheme.battleWaveData[wave].spawnRate !== undefined ? scheme.battleWaveData[wave].spawnRate : 1,
+                            duration: scheme.battleWaveData[wave].duration !== undefined ? scheme.battleWaveData[wave].duration : 10,
+                            coinReward: scheme.battleWaveData[wave].coinReward !== undefined ? scheme.battleWaveData[wave].coinReward : 0
+                        };
+                    }
+                }
+                
+                // 重新初始化20波怪物数据输入界面以应用加载的配置
+                initBattleWaveData();
+            }
+
             // 更新当前方案ID
             currentSchemeId = schemeId;
             
@@ -4957,6 +6904,7 @@
                     updateMonsterTableInfo();
                     updateMonsterSelect();
                     updateStageMonsterSelects(); // 更新关卡怪物选择下拉框
+                    updateBattleWaveMonsterSelects(); // 更新波次怪物选择下拉框
                 }
             } catch (error) {
                 console.error('加载保存的怪物表失败:', error);
@@ -5169,6 +7117,7 @@
             loadSavedEquipmentTable();
             loadSavedHeroTable();
             loadSavedMonsterTable();
+            loadSavedUpgradeTable();
             
             // 如果配置了共享存储，自动尝试同步（静默，不显示错误）
             if (sharedGistId) {
@@ -5195,6 +7144,9 @@
             
             // 初始化关卡配置界面
             initStageConfig();
+            
+            // 初始化20波怪物数据输入界面
+            initBattleWaveData();
             
             // 初始化平台属性配置显示
             updatePlatformAttributes();
