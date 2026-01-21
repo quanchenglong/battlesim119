@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -390,6 +390,14 @@
             height: 100%;
             background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);
             transition: width 0.3s ease;
+        }
+
+        .monster-hp-text {
+            font-size: 0.65em;
+            color: #666;
+            margin-top: 2px;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .monster-id {
@@ -1481,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.4';
+        const VERSION = '2.0.5';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -6848,7 +6856,9 @@
                     monstersSide.innerHTML = '<div style="color: rgba(255,255,255,0.7); font-size: 1.2em; text-align: center; width: 100%; padding: 20px;">暂无怪物</div>';
                 } else {
                     monstersSide.innerHTML = aliveMonsters.map(monster => {
-                        const hpPercent = monster.maxHp > 0 ? (monster.hp / monster.maxHp * 100) : 0;
+                        const hpNow = Math.max(0, Number(monster.hp) || 0);
+                        const hpMax = Math.max(0, Number(monster.maxHp) || 0);
+                        const hpPercent = hpMax > 0 ? Math.max(0, Math.min(100, (hpNow / hpMax * 100))) : 0;
                         const emoji = getMonsterEmoji(monster.id);
                         const spawnTag = (monster.spawnTimeSec !== undefined && monster.spawnTimeSec !== null) ? `${monster.spawnTimeSec}s` : '';
                         
@@ -6876,6 +6886,7 @@
                                 <div class="monster-hp-bar">
                                     <div class="monster-hp-fill" style="width: ${hpPercent}%;"></div>
                                 </div>
+                                <div class="monster-hp-text">${hpNow.toFixed(0)} / ${hpMax.toFixed(0)}</div>
                                 <div class="monster-id">#${monster.id}</div>
                                 <div style="font-size: 0.7em; color: #666; margin-top: 2px;">W${monster.wave}</div>
                             </div>
@@ -8089,5 +8100,6 @@
     </script>
 </body>
 </html>
+
 
 
