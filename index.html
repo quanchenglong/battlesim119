@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -4309,7 +4309,7 @@
                     ${(char.id === 2 || char.id === 3 || char.id === 4) ? `
                     <div class="input-group">
                         <label>技能伤害系数（%）</label>
-                        <input type="number" class="char-skillDamage" data-char="${char.id}" min="0" step="0.1" value="${char.skillDamage || 0}" onchange="updateCharacter(${char.id}, 'skillDamage', this.value)" />
+                        <input type="number" class="char-skillDamage" data-char="${char.id}" min="-1000" step="0.1" value="${char.skillDamage || 0}" onchange="updateCharacter(${char.id}, 'skillDamage', this.value)" />
                     </div>
                     ` : ''}
                     ${char.id === 5 ? `
@@ -5306,8 +5306,9 @@
             
             // 角色2、3、4的技能伤害加成
             let finalDamage = baseDamage;
-            if ((character.id === 2 || character.id === 3 || character.id === 4) && character.skillDamage > 0) {
-                const skillBonus = baseDamage * (character.skillDamage / 100);
+            const skillPct = parseFloat(character.skillDamage) || 0;
+            if ((character.id === 2 || character.id === 3 || character.id === 4) && skillPct !== 0) {
+                const skillBonus = baseDamage * (skillPct / 100);
                 finalDamage = baseDamage + skillBonus;
                 finalDamage = Math.max(1, Math.floor(finalDamage));
             }
@@ -5336,8 +5337,9 @@
             
             // 角色2、3、4的技能伤害加成
             let finalDamage = baseDamage;
-            if ((character.id === 2 || character.id === 3 || character.id === 4) && character.skillDamage > 0) {
-                const skillBonus = baseDamage * (character.skillDamage / 100);
+            const skillPct = parseFloat(character.skillDamage) || 0;
+            if ((character.id === 2 || character.id === 3 || character.id === 4) && skillPct !== 0) {
+                const skillBonus = baseDamage * (skillPct / 100);
                 finalDamage = baseDamage + skillBonus;
                 finalDamage = Math.max(1, Math.floor(finalDamage));
             }
@@ -6436,8 +6438,9 @@
             
             // 角色2、3、4的技能伤害加成
             let finalDamage = baseDamage;
-            if ((character.id === 2 || character.id === 3 || character.id === 4) && character.skillDamage > 0) {
-                const skillBonus = baseDamage * (character.skillDamage / 100);
+            const skillPct = parseFloat(character.skillDamage) || 0;
+            if ((character.id === 2 || character.id === 3 || character.id === 4) && skillPct !== 0) {
+                const skillBonus = baseDamage * (skillPct / 100);
                 finalDamage = baseDamage + skillBonus;
                 finalDamage = Math.max(1, Math.floor(finalDamage));
             }
