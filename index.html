@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.11';
+        const VERSION = '2.0.12';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -7447,6 +7447,8 @@
                 vehicleConfig: JSON.parse(JSON.stringify(vehicleConfig)),
             // 保存关卡配置
             stageConfig: JSON.parse(JSON.stringify(stageConfig)),
+            // 保存当前选择的25波怪物数据方案ID
+            battleWaveSchemeId: currentBattleWaveSchemeId || null,
             
             // 从界面读取最新的20波怪物数据输入配置
             // 确保保存时读取界面上的最新值
@@ -8221,6 +8223,7 @@
     </script>
 </body>
 </html>
+
 
 
 
