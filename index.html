@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.8';
+        const VERSION = '2.0.9';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -7183,6 +7183,29 @@
                     console.log('已同步方案，共', sharedData.schemes.length, '个');
                 }
                 
+                // 同步武器技能升级表
+                if (sharedData.weaponCostTable && Array.isArray(sharedData.weaponCostTable)) {
+                    weaponCostTable = sharedData.weaponCostTable;
+                    localStorage.setItem('weaponCostTable', JSON.stringify(weaponCostTable));
+                    updateUpgradeTableInfo();
+                    updateWeaponLevelViewerOptions();
+                    console.log('已同步武器升级表，共', weaponCostTable.length, '条');
+                }
+                
+                if (sharedData.skillCostTable && Array.isArray(sharedData.skillCostTable)) {
+                    skillCostTable = sharedData.skillCostTable;
+                    localStorage.setItem('skillCostTable', JSON.stringify(skillCostTable));
+                    updateUpgradeTableInfo();
+                    console.log('已同步技能升级表，共', skillCostTable.length, '条');
+                }
+                
+                // 同步25波怪物数据方案
+                if (sharedData.battleWaveSchemes && Array.isArray(sharedData.battleWaveSchemes)) {
+                    localStorage.setItem(BATTLE_WAVE_STORAGE_KEY, JSON.stringify(sharedData.battleWaveSchemes));
+                    updateBattleWaveSchemeSelect();
+                    console.log('已同步25波怪物数据方案，共', sharedData.battleWaveSchemes.length, '个');
+                }
+                
                 showMessage('同步成功！已从共享存储加载所有数据', 'success');
                 updateSharedStorageStatus('同步完成');
             } catch (error) {
@@ -7214,6 +7237,11 @@
                     heroTable: heroTable,
                     monsterTable: monsterTable,
                     schemes: loadSchemes(),
+                    // 武器技能升级表
+                    weaponCostTable: weaponCostTable,
+                    skillCostTable: skillCostTable,
+                    // 25波怪物数据方案
+                    battleWaveSchemes: loadBattleWaveSchemes(),
                     lastUpdate: new Date().toISOString(),
                     version: VERSION
                 };
@@ -8134,6 +8162,7 @@
     </script>
 </body>
 </html>
+
 
 
 
