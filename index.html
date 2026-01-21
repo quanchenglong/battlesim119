@@ -5778,14 +5778,25 @@
             }
             
             // 重置波次战斗状态
+            // 注意：char.attack 此时已经包含了装备、平台、车辆加成的最终攻击力
+            // baseAttack 应该使用 char.baseAttack（基础攻击力），而不是 char.attack（最终攻击力）
             waveBattleState = {
                 isRunning: true,
                 startTime: Date.now(),
                 elapsedTime: 0,
                 characters: characters.map(char => ({
                     ...char,
-                    baseAttack: char.attack, // 保存基础攻击力
-                    hp: char.maxHp,
+                    // 保存真正的角色基础属性，不包含装备加成（baseAttack/baseDefense/baseHp）
+                    // char.attack/char.defense/char.maxHp 是最终属性（包含装备、平台、车辆加成）
+                    // 这些最终属性会用于战斗计算，但需要保存基础属性以便正确初始化
+                    baseAttack: char.baseAttack || 20, // 保存基础攻击力（不包含装备加成）
+                    baseDefense: char.baseDefense || 10, // 保存基础防御力
+                    baseHp: char.baseHp || 100, // 保存基础血量
+                    // 战斗使用的最终属性（包含所有加成）
+                    attack: char.attack || char.baseAttack || 20, // 最终攻击力
+                    defense: char.defense || char.baseDefense || 10, // 最终防御力
+                    maxHp: char.maxHp || char.baseHp || 100, // 最终最大血量
+                    hp: char.maxHp || char.baseHp || 100, // 当前血量 = 最大血量
                     isAlive: true,
                     lastAttackTime: 0,
                     lastHealTime: null,
@@ -6201,39 +6212,48 @@
 
             // 检查胜利条件：据点5（第21-25波）所有怪物都已击杀
             // 只有当据点5的所有波次（21-25波）的所有怪物都被击杀后，才算据点5胜利
-            if (waveBattleState.currentWave === 25 && waveBattleState.currentStronghold === 5) {
-                const waveData = battleWaveData[25];
-                if (waveData) {
-                    const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
-                    // 检查第25波是否已经出完所有怪物（持续时间已到 或 怪物已按配置刷完）
-                    const wave25Finished = waveElapsedTime >= waveData.duration || 
-                                          waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount;
-                    
-                    // 检查据点5的所有波次（21-25波）的所有怪物是否都已死亡
-                    // 使用 isCurrentStrongholdCleared() 来检查据点5是否完成
-                    if (wave25Finished && isCurrentStrongholdCleared()) {
-                        // 判定胜利：据点5胜利
-                        waveBattleState.isRunning = false;
-                        
-                        // 发放据点5的奖励（如果还未发放）
-                        checkAndGrantStrongholdReward();
-                        
-                        addLog(`<span style="color: #51cf66; font-weight: bold;">🏆 胜利！据点5完成！所有第21-25波怪物都已清除！</span>`);
-                        addLog(`<span style="color: #51cf66; font-weight: bold;">所有25波怪物已完成！</span>`);
-                        addLog(`总统计：击败怪物 ${waveBattleState.totalMonstersKilled}，伤害输出 ${waveBattleState.totalDamageDealt}，战斗时长 ${formatTime(waveBattleState.elapsedTime)}`);
-                        
-                        // 更新按钮状态
-                        const startBtn = document.getElementById('startWaveBattleBtn');
-                        const stopBtn = document.getElementById('stopWaveBattleBtn');
-                        if (startBtn) startBtn.style.display = 'inline-block';
-                        if (stopBtn) stopBtn.style.display = 'none';
-                        
-                        const status = document.getElementById('waveBattleStatus');
-                        if (status) status.textContent = '战斗结束：胜利！';
-                        
-                        updateWaveBattleDisplay();
-                        return;
+            // 检查条件：
+            // 1. 所有25波都已完成（currentWave > 25，或currentWave === 25且第25波已出完）
+            // 2. 当前据点是据点5，且据点5的所有怪物都已死亡
+            if (waveBattleState.currentStronghold === 5) {
+                let all25WavesFinished = false;
+                
+                // 检查所有25波是否都已完成
+                if (waveBattleState.currentWave > 25) {
+                    all25WavesFinished = true;
+                } else if (waveBattleState.currentWave === 25) {
+                    const waveData = battleWaveData[25];
+                    if (waveData) {
+                        const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+                        // 检查第25波是否已经出完所有怪物（持续时间已到 或 怪物已按配置刷完）
+                        all25WavesFinished = waveElapsedTime >= waveData.duration || 
+                                             waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount;
                     }
+                }
+                
+                // 检查据点5的所有波次（21-25波）的所有怪物是否都已死亡
+                if (all25WavesFinished && isCurrentStrongholdCleared()) {
+                    // 判定胜利：据点5胜利
+                    waveBattleState.isRunning = false;
+                    
+                    // 发放据点5的奖励（如果还未发放）
+                    checkAndGrantStrongholdReward();
+                    
+                    addLog(`<span style="color: #51cf66; font-weight: bold;">🏆 胜利！据点5完成！所有第21-25波怪物都已清除！</span>`);
+                    addLog(`<span style="color: #51cf66; font-weight: bold;">所有25波怪物已完成！</span>`);
+                    addLog(`总统计：击败怪物 ${waveBattleState.totalMonstersKilled}，伤害输出 ${waveBattleState.totalDamageDealt}，战斗时长 ${formatTime(waveBattleState.elapsedTime)}`);
+                    
+                    // 更新按钮状态
+                    const startBtn = document.getElementById('startWaveBattleBtn');
+                    const stopBtn = document.getElementById('stopWaveBattleBtn');
+                    if (startBtn) startBtn.style.display = 'inline-block';
+                    if (stopBtn) stopBtn.style.display = 'none';
+                    
+                    const status = document.getElementById('waveBattleStatus');
+                    if (status) status.textContent = '战斗结束：胜利！';
+                    
+                    updateWaveBattleDisplay();
+                    return;
                 }
             }
 
