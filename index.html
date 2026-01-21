@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.6';
+        const VERSION = '2.0.7';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -5900,7 +5900,8 @@
                     lastHealTime: null,
                     finalHealRate: char.finalHealRate || 0,
                     deathTime: null,
-                    skillDamage: 0 // 重置技能伤害加成
+                    // 保留界面配置的技能伤害系数（%）：角色2/3/4会在伤害公式中使用
+                    skillDamage: parseFloat(char.skillDamage) || 0
                 })),
                 monsters: [],
                 currentWave: 0,
@@ -8101,6 +8102,7 @@
     </script>
 </body>
 </html>
+
 
 
 
