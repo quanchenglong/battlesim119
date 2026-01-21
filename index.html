@@ -3263,101 +3263,128 @@
             if (!grid) return;
             
             grid.innerHTML = '';
+            grid.style.display = 'flex';
+            grid.style.flexDirection = 'column';
+            grid.style.gap = '20px';
             
-            for (let wave = 1; wave <= 25; wave++) {
-                const waveData = battleWaveData[wave] || {
-                    monsterId: '',
-                    attack: 10,
-                    defense: 5,
-                    hp: 50,
-                    atkSpeed: 0.33,
-                    damageCoeff: 1,
-                    hpCoeff: 1,
-                    spawnRate: 1,
-                    duration: 10
-                };
+            // 创建5个分组，每组5波
+            for (let group = 0; group < 5; group++) {
+                const groupStartWave = group * 5 + 1;
+                const groupEndWave = group * 5 + 5;
                 
-                // 获取怪物信息（如果已选择）
-                let monsterInfo = '';
-                if (waveData.monsterId && monsterTable.length > 0) {
-                    const monster = monsterTable.find(m => m.id === waveData.monsterId);
-                    if (monster) {
-                        monsterInfo = ` (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                // 创建分组容器
+                const groupContainer = document.createElement('div');
+                groupContainer.style.cssText = 'background: #f8f9ff; border: 2px solid #667eea; border-radius: 12px; padding: 20px;';
+                
+                // 分组标题
+                const groupTitle = document.createElement('div');
+                groupTitle.style.cssText = 'font-weight: 700; color: #667eea; margin-bottom: 15px; font-size: 1.15em; padding-bottom: 10px; border-bottom: 2px solid #667eea;';
+                groupTitle.textContent = `据点${group + 1} (第${groupStartWave}-${groupEndWave}波)`;
+                groupContainer.appendChild(groupTitle);
+                
+                // 创建组内的网格容器
+                const groupGrid = document.createElement('div');
+                groupGrid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 15px;';
+                
+                // 为每组创建5波
+                for (let wave = groupStartWave; wave <= groupEndWave; wave++) {
+                    const waveData = battleWaveData[wave] || {
+                        monsterId: '',
+                        attack: 10,
+                        defense: 5,
+                        hp: 50,
+                        atkSpeed: 0.33,
+                        damageCoeff: 1,
+                        hpCoeff: 1,
+                        spawnRate: 1,
+                        duration: 10
+                    };
+                    
+                    // 获取怪物信息（如果已选择）
+                    let monsterInfo = '';
+                    if (waveData.monsterId && monsterTable.length > 0) {
+                        const monster = monsterTable.find(m => m.id === waveData.monsterId);
+                        if (monster) {
+                            monsterInfo = ` (攻${monster.baseAttack} 防${monster.baseDefense} 血${monster.baseHp})`;
+                        }
                     }
+                    
+                    const waveCard = document.createElement('div');
+                    waveCard.id = `battle-wave-card-${wave}`;
+                    waveCard.style.cssText = 'background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;';
+                    
+                    // 第一波添加复制按钮
+                    const copyButtonHtml = wave === 1 ? `
+                        <div style="margin-bottom: 10px;">
+                            <button class="btn btn-secondary" onclick="copyWave1ToOthers()" style="padding: 8px 16px; font-size: 0.9em; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                📋 复制到其他波次
+                            </button>
+                        </div>
+                    ` : '';
+                    
+                    waveCard.innerHTML = `
+                        <div style="font-weight: 600; color: #333; margin-bottom: 10px; font-size: 1.05em;">第 ${wave} 波</div>
+                        ${copyButtonHtml}
+                        <div class="input-group" style="margin-bottom: 10px;">
+                            <label style="font-size: 0.9em;">怪物ID</label>
+                            <select id="battle-wave-${wave}-monster" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;">
+                                <option value="">手动输入</option>
+                            </select>
+                            <div style="font-size: 0.8em; color: #999; margin-top: 4px;" id="battle-wave-${wave}-monster-info">${monsterInfo}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">攻击力</label>
+                                <input type="number" id="battle-wave-${wave}-attack" min="0" value="${waveData.attack}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">防御力</label>
+                                <input type="number" id="battle-wave-${wave}-defense" min="0" value="${waveData.defense}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">生命值</label>
+                                <input type="number" id="battle-wave-${wave}-hp" min="0" value="${waveData.hp}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">攻速</label>
+                                <input type="number" id="battle-wave-${wave}-atkSpeed" min="0.1" max="10" step="0.01" value="${waveData.atkSpeed}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">伤害系数</label>
+                                <input type="number" id="battle-wave-${wave}-damageCoeff" min="0" step="0.01" value="${waveData.damageCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.85em;">生命值倍率</label>
+                                <input type="number" id="battle-wave-${wave}-hpCoeff" min="0" step="0.01" value="${waveData.hpCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 0.9em;">每秒出几只</label>
+                                <input type="number" id="battle-wave-${wave}-spawnRate" min="0.1" max="100" step="0.1" value="${waveData.spawnRate}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.9em;">持续多少秒</label>
+                                <input type="number" id="battle-wave-${wave}-duration" min="1" max="1000" step="1" value="${waveData.duration}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 0.9em;">击杀银币奖励</label>
+                                <input type="number" id="battle-wave-${wave}-coinReward" min="0" value="${waveData.coinReward || 0}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
+                            </div>
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                            <div>总怪物数: <span id="battle-wave-${wave}-total-count">-</span></div>
+                        </div>
+                    `;
+                    groupGrid.appendChild(waveCard);
                 }
                 
-                const waveCard = document.createElement('div');
-                waveCard.id = `battle-wave-card-${wave}`;
-                waveCard.style.cssText = 'background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;';
-                
-                // 第一波添加复制按钮
-                const copyButtonHtml = wave === 1 ? `
-                    <div style="margin-bottom: 10px;">
-                        <button class="btn btn-secondary" onclick="copyWave1ToOthers()" style="padding: 8px 16px; font-size: 0.9em; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                            📋 复制到其他波次
-                        </button>
-                    </div>
-                ` : '';
-                
-                waveCard.innerHTML = `
-                    <div style="font-weight: 600; color: #333; margin-bottom: 10px; font-size: 1.05em;">第 ${wave} 波</div>
-                    ${copyButtonHtml}
-                    <div class="input-group" style="margin-bottom: 10px;">
-                        <label style="font-size: 0.9em;">怪物ID</label>
-                        <select id="battle-wave-${wave}-monster" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;">
-                            <option value="">手动输入</option>
-                        </select>
-                        <div style="font-size: 0.8em; color: #999; margin-top: 4px;" id="battle-wave-${wave}-monster-info">${monsterInfo}</div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">攻击力</label>
-                            <input type="number" id="battle-wave-${wave}-attack" min="0" value="${waveData.attack}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">防御力</label>
-                            <input type="number" id="battle-wave-${wave}-defense" min="0" value="${waveData.defense}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">生命值</label>
-                            <input type="number" id="battle-wave-${wave}-hp" min="0" value="${waveData.hp}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">攻速</label>
-                            <input type="number" id="battle-wave-${wave}-atkSpeed" min="0.1" max="10" step="0.01" value="${waveData.atkSpeed}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">伤害系数</label>
-                            <input type="number" id="battle-wave-${wave}-damageCoeff" min="0" step="0.01" value="${waveData.damageCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                        <div class="input-group">
-                            <label style="font-size: 0.85em;">生命值倍率</label>
-                            <input type="number" id="battle-wave-${wave}-hpCoeff" min="0" step="0.01" value="${waveData.hpCoeff}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em;" />
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
-                        <div class="input-group">
-                            <label style="font-size: 0.9em;">每秒出几只</label>
-                            <input type="number" id="battle-wave-${wave}-spawnRate" min="0.1" max="100" step="0.1" value="${waveData.spawnRate}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
-                        </div>
-                        <div class="input-group">
-                            <label style="font-size: 0.9em;">持续多少秒</label>
-                            <input type="number" id="battle-wave-${wave}-duration" min="1" max="1000" step="1" value="${waveData.duration}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px;">
-                        <div class="input-group">
-                            <label style="font-size: 0.9em;">击杀银币奖励</label>
-                            <input type="number" id="battle-wave-${wave}-coinReward" min="0" value="${waveData.coinReward || 0}" onchange="updateBattleWaveData(${wave})" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em;" />
-                        </div>
-                    </div>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
-                        <div>总怪物数: <span id="battle-wave-${wave}-total-count">-</span></div>
-                    </div>
-                `;
-                grid.appendChild(waveCard);
+                groupContainer.appendChild(groupGrid);
+                grid.appendChild(groupContainer);
             }
             
             // 更新所有波次怪物选择下拉框
