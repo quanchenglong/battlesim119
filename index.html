@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -5988,14 +5988,48 @@
             }
             
             const waveRange = getStrongholdWaveRange(waveBattleState.currentStronghold);
-            // 检查该据点所有波次的所有怪物是否都已死亡
+            
+            // 首先检查场景内是否有该据点的存活怪物
             const aliveMonsters = waveBattleState.monsters.filter(m => 
                 m.isAlive && 
                 m.wave >= waveRange.start && 
                 m.wave <= waveRange.end
             );
             
-            return aliveMonsters.length === 0;
+            // 如果场景内还有存活怪物，据点未完成
+            if (aliveMonsters.length > 0) {
+                return false;
+            }
+            
+            // 场景内没有存活怪物后，还需要检查据点的最后一个波次是否已经完成
+            // 如果据点的最后一个波次（waveRange.end）已经完成，且场景内没有存活怪物，
+            // 说明据点的所有波次都已完成（因为只有在前一个波次完成后才会开始下一个波次）
+            const lastWave = waveRange.end;
+            const lastWaveData = battleWaveData[lastWave];
+            
+            // 如果最后一个波次没有配置，或者当前波次已经超过了最后一个波次，说明据点已完成
+            if (!lastWaveData || (!lastWaveData.monsterId && lastWaveData.attack <= 0)) {
+                // 最后一个波次没有配置，只要场景内没有存活怪物就算完成
+                return true;
+            }
+            
+            // 如果当前波次还未开始据点的最后一个波次，据点未完成
+            if (waveBattleState.currentWave < lastWave) {
+                return false;
+            }
+            
+            // 如果当前波次正好是据点的最后一个波次，检查该波次是否已经完成
+            if (waveBattleState.currentWave === lastWave) {
+                const waveElapsedTime = waveBattleState.elapsedTime - waveBattleState.waveStartTime;
+                const waveFinished = waveElapsedTime >= lastWaveData.duration || 
+                                   waveBattleState.waveSpawnedCount >= waveBattleState.waveTotalCount;
+                if (!waveFinished) {
+                    return false; // 最后一个波次还未完成，据点未完成
+                }
+            }
+            
+            // 所有条件都满足：场景内没有存活怪物，且据点的最后一个波次已完成
+            return true;
         }
         
         // 检查并发放据点完成奖励（立即发放，不等待下一波）
