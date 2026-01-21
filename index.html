@@ -447,6 +447,30 @@
             pointer-events: none;
             z-index: 2;
         }
+        
+        /* 可攻击倒计时标记（右上角） */
+        .monster-attack-countdown {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.7em;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: rgba(255, 87, 34, 0.85);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+            pointer-events: none;
+            z-index: 3;
+            min-width: 35px;
+            text-align: center;
+        }
+        
+        .monster-attack-countdown.ready {
+            background: rgba(76, 175, 80, 0.85);
+        }
 
         .character-sprite.hit {
             animation: hitAnimation 0.3s ease;
@@ -1026,7 +1050,7 @@
                         </div>
                         <div style="margin-bottom: 10px; font-size: 0.85em; color: #555; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
                             <span>怪物生成后前</span>
-                            <input type="number" id="monsterAttackDelayInput" min="0" max="60" step="0.5" value="5" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
+                            <input type="number" id="monsterAttackDelayInput" min="0" max="60" step="0.5" value="3" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
                             <span>秒不攻击；角色攻击频率</span>
                             <input type="number" id="characterAttackIntervalInput" min="0.01" max="5" step="0.01" value="0.1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
                             <span>秒/次，伤害系数</span>
@@ -1594,8 +1618,8 @@
         let weaponLevel = 0; // 当前武器等级
         let skillLevel = 0; // 当前技能等级
 
-        // 怪物生成后开始攻击前的延迟时间（秒），默认5秒，可在界面中配置
-        let monsterAttackDelay = 5;
+        // 怪物生成后开始攻击前的延迟时间（秒），默认3秒，可在界面中配置
+        let monsterAttackDelay = 3;
         // 角色攻击频率（秒/次），默认0.1秒攻击一次；以及每次攻击伤害倍率，默认0.1倍，可在界面中配置
         let characterAttackInterval = 0.1;
         let characterDamageScale = 0.1;
@@ -3704,12 +3728,17 @@
                 latestStrongholdRewards[i] = rewardInput ? (parseInt(rewardInput.value) || 0) : 0;
             }
             
+            // 读取怪物攻击延迟配置
+            const delayInput = document.getElementById('monsterAttackDelayInput');
+            const latestMonsterAttackDelay = delayInput ? (parseFloat(delayInput.value) || 3) : 3;
+            
             const schemeData = {
                 id: currentBattleWaveSchemeId || Date.now().toString(),
                 name: name,
                 saveTime: new Date().toISOString(),
                 battleWaveData: latestBattleWaveData,
-                strongholdRewards: latestStrongholdRewards
+                strongholdRewards: latestStrongholdRewards,
+                monsterAttackDelay: latestMonsterAttackDelay
             };
             
             // 如果已存在，更新；否则添加
@@ -3786,6 +3815,15 @@
                     if (rewardInput) {
                         rewardInput.value = strongholdRewards[i];
                     }
+                }
+            }
+            
+            // 加载怪物攻击延迟配置
+            if (scheme.monsterAttackDelay !== undefined) {
+                monsterAttackDelay = parseFloat(scheme.monsterAttackDelay) || 3;
+                const delayInput = document.getElementById('monsterAttackDelayInput');
+                if (delayInput) {
+                    delayInput.value = monsterAttackDelay;
                 }
             }
             
@@ -5690,7 +5728,7 @@
                 const val = parseFloat(delayInput.value);
                 monsterAttackDelay = isNaN(val) || val < 0 ? 0 : val;
             } else {
-                monsterAttackDelay = 5; // 安全兜底
+                monsterAttackDelay = 3; // 安全兜底
             }
 
             // 读取角色攻击频率（秒/次）和伤害倍率配置
@@ -6670,11 +6708,26 @@
                         const emoji = getMonsterEmoji(monster.id);
                         const spawnTag = (monster.spawnTimeSec !== undefined && monster.spawnTimeSec !== null) ? `${monster.spawnTimeSec}s` : '';
                         
+                        // 计算可攻击倒计时
+                        const delay = typeof monsterAttackDelay === 'number' ? monsterAttackDelay : 3;
+                        let countdownHtml = '';
+                        if (delay > 0 && monster.spawnGameTime !== undefined) {
+                            const aliveTime = waveBattleState.elapsedTime - monster.spawnGameTime;
+                            const remainingTime = Math.max(0, delay - aliveTime);
+                            if (remainingTime > 0) {
+                                const countdownText = remainingTime >= 1 ? remainingTime.toFixed(0) : remainingTime.toFixed(1);
+                                countdownHtml = `<div class="monster-attack-countdown">${countdownText}s</div>`;
+                            } else {
+                                countdownHtml = `<div class="monster-attack-countdown ready">可攻击</div>`;
+                            }
+                        }
+                        
                         return `
                             <div class="monster-sprite ${monster.isAlive ? '' : 'dead'}" 
                                  id="monster-sprite-${monster.id}" 
                                  data-monster-id="${monster.id}">
                                 ${spawnTag ? `<div class="monster-spawn-time-tag">${spawnTag}</div>` : ''}
+                                ${countdownHtml}
                                 <div class="monster-avatar">${emoji}</div>
                                 <div class="monster-hp-bar">
                                     <div class="monster-hp-fill" style="width: ${hpPercent}%;"></div>
