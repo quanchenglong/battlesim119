@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.10';
+        const VERSION = '2.0.11';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -7217,7 +7217,7 @@
                 // 同步方案
                 if (sharedData.schemes && Array.isArray(sharedData.schemes)) {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(sharedData.schemes));
-                    renderSchemes();
+                    renderSchemeList();
                     syncCount++;
                     syncMessages.push(`方案（${sharedData.schemes.length}个）`);
                     console.log('已同步方案，共', sharedData.schemes.length, '个');
@@ -8221,6 +8221,7 @@
     </script>
 </body>
 </html>
+
 
 
 
