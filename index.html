@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.12';
+        const VERSION = '2.0.13';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -3652,7 +3652,8 @@
             if (!selectEl) return;
             
             const schemes = loadBattleWaveSchemes();
-            const currentValue = selectEl.value || currentBattleWaveSchemeId || '';
+            // 优先使用 currentBattleWaveSchemeId，确保切换主配置方案时下拉框能正确显示
+            const currentValue = currentBattleWaveSchemeId || selectEl.value || '';
             
             // 清空并重新填充
             selectEl.innerHTML = '<option value="">选择方案...</option>';
@@ -3666,6 +3667,11 @@
                 }
                 selectEl.appendChild(option);
             });
+            
+            // 确保下拉框的值正确设置（如果 currentBattleWaveSchemeId 存在）
+            if (currentBattleWaveSchemeId) {
+                selectEl.value = currentBattleWaveSchemeId;
+            }
             
             // 更新状态显示
             const statusEl = document.getElementById('battleWaveSchemeStatus');
@@ -8223,6 +8229,7 @@
     </script>
 </body>
 </html>
+
 
 
 
