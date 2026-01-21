@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1480,7 +1480,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.2';
+        const VERSION = '2.0.3';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -5709,6 +5709,37 @@
                 return;
             }
 
+            // 从界面读取最新的25波怪物数据配置（确保每次战斗都使用最新的界面配置）
+            for (let wave = 1; wave <= 25; wave++) {
+                const monsterSelect = document.getElementById(`battle-wave-${wave}-monster`);
+                const attackInput = document.getElementById(`battle-wave-${wave}-attack`);
+                const defenseInput = document.getElementById(`battle-wave-${wave}-defense`);
+                const hpInput = document.getElementById(`battle-wave-${wave}-hp`);
+                const atkSpeedInput = document.getElementById(`battle-wave-${wave}-atkSpeed`);
+                const damageCoeffInput = document.getElementById(`battle-wave-${wave}-damageCoeff`);
+                const hpCoeffInput = document.getElementById(`battle-wave-${wave}-hpCoeff`);
+                const spawnRateInput = document.getElementById(`battle-wave-${wave}-spawnRate`);
+                const durationInput = document.getElementById(`battle-wave-${wave}-duration`);
+                const coinRewardInput = document.getElementById(`battle-wave-${wave}-coinReward`);
+                
+                if (monsterSelect && attackInput && defenseInput && hpInput && 
+                    atkSpeedInput && damageCoeffInput && hpCoeffInput &&
+                    spawnRateInput && durationInput) {
+                    battleWaveData[wave] = {
+                        monsterId: monsterSelect.value || '',
+                        attack: parseFloat(attackInput.value) || 10,
+                        defense: parseFloat(defenseInput.value) || 5,
+                        hp: parseFloat(hpInput.value) || 50,
+                        atkSpeed: parseFloat(atkSpeedInput.value) || 0.33,
+                        damageCoeff: parseFloat(damageCoeffInput.value) || 1,
+                        hpCoeff: parseFloat(hpCoeffInput.value) || 1,
+                        spawnRate: parseFloat(spawnRateInput.value) || 1,
+                        duration: parseFloat(durationInput.value) || 10,
+                        coinReward: coinRewardInput ? (parseFloat(coinRewardInput.value) || 0) : 0
+                    };
+                }
+            }
+
             // 检查是否有配置的波次
             let hasWaveConfig = false;
             for (let wave = 1; wave <= 25; wave++) {
@@ -7966,3 +7997,4 @@
     </script>
 </body>
 </html>
+
