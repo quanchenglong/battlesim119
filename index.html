@@ -5878,18 +5878,6 @@
         }
         
         function startNextWave() {
-            // 检查是否需要等待当前据点所有怪物死亡
-            if (waveBattleState.currentStronghold > 0 && waveBattleState.currentStronghold <= 5) {
-                // 如果当前据点还未完成，需要等待所有怪物死亡
-                if (!isCurrentStrongholdCleared()) {
-                    // 当前据点还有怪物存活，不能开始下一波
-                    return;
-                }
-                
-                // 当前据点已完成，检查是否应该给予据点奖励（如果在怪物死亡时未发放，这里作为备用）
-                checkAndGrantStrongholdReward();
-            }
-            
             // 查找下一个有配置的波次
             while (waveBattleState.currentWave < 25) {
                 waveBattleState.currentWave++;
@@ -5900,14 +5888,19 @@
                     const newStronghold = getStrongholdForWave(waveBattleState.currentWave);
                     if (newStronghold > waveBattleState.currentStronghold) {
                         // 进入新据点，需要等待上一个据点所有怪物死亡
+                        // 同据点不同波次不需要等待，只有跨据点才需要等待
                         if (waveBattleState.currentStronghold > 0 && !isCurrentStrongholdCleared()) {
                             // 上一个据点还有怪物存活，不能开始新据点
                             waveBattleState.currentWave--; // 回退
                             return;
                         }
+                        // 上一个据点已完成，检查是否应该给予据点奖励（如果在怪物死亡时未发放，这里作为备用）
+                        if (waveBattleState.currentStronghold > 0) {
+                            checkAndGrantStrongholdReward();
+                        }
                         waveBattleState.currentStronghold = newStronghold;
                     }
-                    // 找到有配置的波次，开始这一波
+                    // 找到有配置的波次，开始这一波（同据点内直接开始，不需要等待）
                     break;
                 }
             }
