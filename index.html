@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.5';
+        const VERSION = '2.0.6';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -5877,9 +5877,10 @@
             // 重置波次战斗状态
             // 注意：char.attack 此时已经包含了装备、平台、车辆加成的最终攻击力
             // baseAttack 应该使用 char.baseAttack（基础攻击力），而不是 char.attack（最终攻击力）
+            const battleStartTime = Date.now(); // 记录战斗开始时间
             waveBattleState = {
                 isRunning: true,
-                startTime: Date.now(),
+                startTime: battleStartTime,
                 elapsedTime: 0,
                 characters: characters.map(char => ({
                     ...char,
@@ -5895,7 +5896,7 @@
                     maxHp: char.maxHp || char.baseHp || 100, // 最终最大血量
                     hp: char.maxHp || char.baseHp || 100, // 当前血量 = 最大血量
                     isAlive: true,
-                    lastAttackTime: 0,
+                    lastAttackTime: battleStartTime, // 初始化为战斗开始时间，确保第一次攻击可以立即进行
                     lastHealTime: null,
                     finalHealRate: char.finalHealRate || 0,
                     deathTime: null,
@@ -8100,6 +8101,7 @@
     </script>
 </body>
 </html>
+
 
 
 
