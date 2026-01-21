@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1489,7 +1489,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.7';
+        const VERSION = '2.0.8';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -6282,19 +6282,32 @@
                 }
             }
 
-            // 角色攻击
+            // 角色攻击（按时间补齐：避免帧率下降导致“攻速变慢”）
+            const maxAttacksPerFrame = 10; // 单帧最多补齐次数，防止卡顿时爆发循环
             waveBattleState.characters.forEach(char => {
-                if (char.isAlive && waveBattleState.monsters.length > 0) {
-                    const timeSinceLastAttack = (now - char.lastAttackTime) / 1000;
-                    // 使用全局配置的角色攻击频率，默认0.1秒1次
-                    const attackInterval = typeof characterAttackInterval === 'number' && characterAttackInterval > 0
-                        ? characterAttackInterval
-                        : (1 / char.atkSpeed);
+                if (!char.isAlive || waveBattleState.monsters.length === 0) return;
 
-                    if (timeSinceLastAttack >= attackInterval) {
-                        characterAttackWave(char);
-                        char.lastAttackTime = now;
-                    }
+                // 使用全局配置的角色攻击频率（秒/次），默认0.1秒1次
+                const attackIntervalSec = (typeof characterAttackInterval === 'number' && characterAttackInterval > 0)
+                    ? characterAttackInterval
+                    : (1 / (char.atkSpeed || 1));
+
+                const intervalMs = attackIntervalSec * 1000;
+                if (!isFinite(intervalMs) || intervalMs <= 0) return;
+
+                let elapsedMs = now - (char.lastAttackTime || waveBattleState.startTime);
+                if (elapsedMs < intervalMs) return;
+
+                const shouldAttacks = Math.min(maxAttacksPerFrame, Math.floor(elapsedMs / intervalMs));
+                for (let i = 0; i < shouldAttacks; i++) {
+                    if (!char.isAlive || waveBattleState.monsters.length === 0) break;
+                    characterAttackWave(char);
+                    char.lastAttackTime = (char.lastAttackTime || now) + intervalMs;
+                }
+
+                // 兜底：保证lastAttackTime不会跑到未来太多（比如elapsedMs很小但lastAttackTime为空）
+                if (char.lastAttackTime > now) {
+                    char.lastAttackTime = now;
                 }
             });
 
@@ -6329,18 +6342,34 @@
                 }
             });
 
-            // 怪物攻击
-            waveBattleState.monsters.forEach(monster => {
-                if (monster.isAlive) {
-                    const timeSinceLastAttack = (now - monster.lastAttackTime) / 1000;
-                    const attackInterval = 1 / monster.atkSpeed;
+            // 怪物攻击（同样按时间补齐）
+            const maxMonsterAttacksPerFrame = 10;
+            const anyCharAlive = waveBattleState.characters.some(c => c.isAlive);
+            if (anyCharAlive) {
+                waveBattleState.monsters.forEach(monster => {
+                    if (!monster.isAlive) return;
 
-                    if (timeSinceLastAttack >= attackInterval && waveBattleState.characters.some(c => c.isAlive)) {
+                    const atkSpeed = monster.atkSpeed || 0;
+                    if (atkSpeed <= 0) return;
+                    const intervalMs = (1 / atkSpeed) * 1000;
+                    if (!isFinite(intervalMs) || intervalMs <= 0) return;
+
+                    let elapsedMs = now - (monster.lastAttackTime || waveBattleState.startTime);
+                    if (elapsedMs < intervalMs) return;
+
+                    const shouldAttacks = Math.min(maxMonsterAttacksPerFrame, Math.floor(elapsedMs / intervalMs));
+                    for (let i = 0; i < shouldAttacks; i++) {
+                        if (!monster.isAlive) break;
+                        if (!waveBattleState.characters.some(c => c.isAlive)) break;
                         monsterAttackWave(monster);
+                        monster.lastAttackTime = (monster.lastAttackTime || now) + intervalMs;
+                    }
+
+                    if (monster.lastAttackTime > now) {
                         monster.lastAttackTime = now;
                     }
-                }
-            });
+                });
+            }
 
             // 清理死亡怪物
             waveBattleState.monsters = waveBattleState.monsters.filter(monster => monster.isAlive);
@@ -8105,6 +8134,7 @@
     </script>
 </body>
 </html>
+
 
 
 
