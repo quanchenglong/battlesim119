@@ -5859,6 +5859,24 @@
             return aliveMonsters.length === 0;
         }
         
+        // 检查并发放据点完成奖励（立即发放，不等待下一波）
+        function checkAndGrantStrongholdReward() {
+            if (waveBattleState.currentStronghold <= 0 || waveBattleState.currentStronghold > 5) {
+                return;
+            }
+            
+            // 检查当前据点是否已完成且还未发放奖励
+            if (isCurrentStrongholdCleared() && !waveBattleState.strongholdCompleted[waveBattleState.currentStronghold]) {
+                const reward = strongholdRewards[waveBattleState.currentStronghold] || 0;
+                if (reward > 0) {
+                    waveBattleCoins += reward;
+                    updateCoinsDisplay();
+                    addLog(`<span style="color: #ffd43b; font-weight: bold;">据点 ${waveBattleState.currentStronghold} 完成！获得 ${reward} 银币奖励！</span>`);
+                }
+                waveBattleState.strongholdCompleted[waveBattleState.currentStronghold] = true;
+            }
+        }
+        
         function startNextWave() {
             // 检查是否需要等待当前据点所有怪物死亡
             if (waveBattleState.currentStronghold > 0 && waveBattleState.currentStronghold <= 5) {
@@ -5868,16 +5886,8 @@
                     return;
                 }
                 
-                // 当前据点已完成，检查是否应该给予据点奖励
-                if (!waveBattleState.strongholdCompleted[waveBattleState.currentStronghold]) {
-                    const reward = strongholdRewards[waveBattleState.currentStronghold] || 0;
-                    if (reward > 0) {
-                        waveBattleCoins += reward;
-                        updateCoinsDisplay();
-                        addLog(`<span style="color: #ffd43b; font-weight: bold;">据点 ${waveBattleState.currentStronghold} 完成！获得 ${reward} 银币奖励！</span>`);
-                    }
-                    waveBattleState.strongholdCompleted[waveBattleState.currentStronghold] = true;
-                }
+                // 当前据点已完成，检查是否应该给予据点奖励（如果在怪物死亡时未发放，这里作为备用）
+                checkAndGrantStrongholdReward();
             }
             
             // 查找下一个有配置的波次
@@ -6272,6 +6282,9 @@
                 if (monsterSprite) {
                     monsterSprite.classList.add('dead');
                 }
+                
+                // 检查据点是否完成，如果完成则立即发放据点奖励
+                checkAndGrantStrongholdReward();
             }
         }
 
