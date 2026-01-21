@@ -1033,6 +1033,7 @@
                                 <select id="battleWaveSchemeSelect" onchange="loadBattleWaveScheme(this.value)" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; min-width: 150px;">
                                     <option value="">选择方案...</option>
                                 </select>
+                                <button class="btn btn-secondary" onclick="copyBattleWaveScheme()" style="padding: 8px 16px; font-size: 0.9em; background: #51cf66; color: white;">复制方案</button>
                                 <button class="btn btn-danger" onclick="deleteBattleWaveScheme()" style="padding: 8px 16px; font-size: 0.9em; background: #ff6b6b;">删除方案</button>
                             </div>
                             <div id="battleWaveSchemeStatus" style="font-size: 0.85em; color: #666;"></div>
@@ -1480,7 +1481,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.3';
+        const VERSION = '2.0.4';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -3843,6 +3844,63 @@
             
             showMessage(`已加载25波方案"${scheme.name}"`, 'success');
         }
+        
+        // 复制25波方案
+        window.copyBattleWaveScheme = function() {
+            const selectEl = document.getElementById('battleWaveSchemeSelect');
+            if (!selectEl || !selectEl.value) {
+                showMessage('请先选择一个方案', 'error');
+                return;
+            }
+            
+            const schemeId = selectEl.value;
+            const schemes = loadBattleWaveSchemes();
+            const scheme = schemes.find(s => s.id === schemeId);
+            
+            if (!scheme) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            
+            // 检查方案数量
+            if (schemes.length >= MAX_BATTLE_WAVE_SCHEMES) {
+                showMessage(`最多只能保存${MAX_BATTLE_WAVE_SCHEMES}个方案，请先删除一个`, 'error');
+                return;
+            }
+            
+            // 创建新方案（复制数据）
+            const newScheme = {
+                id: Date.now().toString(),
+                name: `${scheme.name} - 副本`,
+                saveTime: new Date().toISOString(),
+                battleWaveData: JSON.parse(JSON.stringify(scheme.battleWaveData || {})), // 深拷贝25波怪物数据
+                strongholdRewards: JSON.parse(JSON.stringify(scheme.strongholdRewards || {})), // 深拷贝据点奖励
+                monsterAttackDelay: scheme.monsterAttackDelay !== undefined ? scheme.monsterAttackDelay : 3 // 复制怪物攻击延迟
+            };
+            
+            // 如果名称已存在，添加数字后缀
+            let copyName = newScheme.name;
+            let copyIndex = 1;
+            while (schemes.some(s => s.name === copyName)) {
+                copyName = `${scheme.name} - 副本${copyIndex}`;
+                copyIndex++;
+            }
+            newScheme.name = copyName;
+            
+            // 添加到列表
+            schemes.push(newScheme);
+            localStorage.setItem(BATTLE_WAVE_STORAGE_KEY, JSON.stringify(schemes));
+            
+            // 加载新复制的方案
+            currentBattleWaveSchemeId = newScheme.id;
+            loadBattleWaveSchemeById(newScheme.id);
+            
+            // 更新方案名称输入框
+            const nameInput = document.getElementById('battleWaveSchemeNameInput');
+            if (nameInput) nameInput.value = copyName;
+            
+            showMessage(`已复制方案"${scheme.name}"为"${copyName}"`, 'success');
+        };
         
         // 删除25波方案
         window.deleteBattleWaveScheme = function() {
@@ -7997,4 +8055,5 @@
     </script>
 </body>
 </html>
+
 
