@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>战斗模拟器 v2.0.1</title>
+    <title>战斗模拟器</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -961,7 +961,7 @@
     <div class="container">
         <div class="header">
             <h1>⚔️ 战斗模拟器</h1>
-            <div class="version">v<span id="version">2.0.1</span></div>
+            <div class="version">v<span id="version">-</span></div>
         </div>
 
         <!-- 标签页容器 -->
@@ -1480,8 +1480,9 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.1';
+        const VERSION = '2.0.2';
         document.getElementById('version').textContent = VERSION;
+        document.title = `战斗模拟器 v${VERSION}`;
 
         // 职业类型
         const JOB_TYPES = {
