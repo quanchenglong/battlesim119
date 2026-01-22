@@ -1730,7 +1730,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.3.0';
+        const VERSION = '2.4.0';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -9755,6 +9755,72 @@
                     console.log('共享存储中没有25波怪物数据方案（可能是旧版本数据）');
                 }
                 
+                // 同步招募角色信息表（包含三个部分）
+                let recruitTableSynced = false;
+                if (sharedData.recruitInfoTable && Array.isArray(sharedData.recruitInfoTable)) {
+                    recruitInfoTable = sharedData.recruitInfoTable;
+                    localStorage.setItem(RECRUIT_INFO_STORAGE_KEY, JSON.stringify(recruitInfoTable));
+                    recruitTableSynced = true;
+                    console.log('已同步招募角色信息表，共', recruitInfoTable.length, '条');
+                } else {
+                    console.log('共享存储中没有招募角色信息表（可能是旧版本数据）');
+                }
+                
+                if (sharedData.recruitBoxLevelTable && Array.isArray(sharedData.recruitBoxLevelTable)) {
+                    recruitBoxLevelTable = sharedData.recruitBoxLevelTable;
+                    localStorage.setItem(RECRUIT_BOX_LEVEL_STORAGE_KEY, JSON.stringify(recruitBoxLevelTable));
+                    recruitTableSynced = true;
+                    console.log('已同步招募奖池等级表，共', recruitBoxLevelTable.length, '档');
+                } else {
+                    console.log('共享存储中没有招募奖池等级表（可能是旧版本数据）');
+                }
+                
+                if (sharedData.recruitPoolTable && Array.isArray(sharedData.recruitPoolTable)) {
+                    recruitPoolTable = sharedData.recruitPoolTable;
+                    localStorage.setItem(RECRUIT_POOL_STORAGE_KEY, JSON.stringify(recruitPoolTable));
+                    recruitTableSynced = true;
+                    console.log('已同步招募奖池表，共', recruitPoolTable.length, '条');
+                } else {
+                    console.log('共享存储中没有招募奖池表（可能是旧版本数据）');
+                }
+                
+                if (recruitTableSynced) {
+                    syncCount++;
+                    syncMessages.push(`招募角色信息表（信息${recruitInfoTable.length}条，等级${recruitBoxLevelTable.length}档，奖池${recruitPoolTable.length}条）`);
+                    // 更新招募角色信息表状态显示
+                    const status = document.getElementById('recruitInfoTableStatus');
+                    const info = document.getElementById('recruitInfoTableInfo');
+                    if (status) status.textContent = `已加载招募表 ${recruitInfoTable.length} 条，奖池等级 ${recruitBoxLevelTable.length} 档，HeroPoolGroup ${recruitPoolTable.length} 条`;
+                    if (info) info.innerHTML = `HeroBoxLevel: ${recruitBoxLevelTable.length} 条；HeroPoolGroup: ${recruitPoolTable.length} 条；招募信息: ${recruitInfoTable.length} 条`;
+                }
+                
+                // 同步玩家账号等级表
+                if (sharedData.accountLevelTable && Array.isArray(sharedData.accountLevelTable)) {
+                    accountLevelTable = sharedData.accountLevelTable;
+                    localStorage.setItem(ACCOUNT_LEVEL_TABLE_STORAGE_KEY, JSON.stringify(accountLevelTable));
+                    syncCount++;
+                    syncMessages.push(`玩家账号等级表（${accountLevelTable.length}条）`);
+                    console.log('已同步玩家账号等级表，共', accountLevelTable.length, '条');
+                    // 更新状态显示
+                    const status = document.getElementById('accountLevelTableStatus');
+                    const info = document.getElementById('accountLevelTableInfo');
+                    if (status) status.textContent = `已加载玩家账号等级表 ${accountLevelTable.length} 条`;
+                    if (info) info.innerHTML = `共 ${accountLevelTable.length} 条，升到各级所需经验已导入`;
+                } else {
+                    console.log('共享存储中没有玩家账号等级表（可能是旧版本数据）');
+                }
+                
+                // 同步玩家经济模拟方案
+                if (sharedData.economySchemes && Array.isArray(sharedData.economySchemes)) {
+                    localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(sharedData.economySchemes));
+                    updateEconomySchemeSelect();
+                    syncCount++;
+                    syncMessages.push(`玩家经济模拟方案（${sharedData.economySchemes.length}个）`);
+                    console.log('已同步玩家经济模拟方案，共', sharedData.economySchemes.length, '个');
+                } else {
+                    console.log('共享存储中没有玩家经济模拟方案（可能是旧版本数据）');
+                }
+                
                 if (syncCount > 0) {
                     showMessage(`同步成功！已加载：${syncMessages.join('、')}`, 'success');
                     updateSharedStorageStatus('同步完成');
@@ -9798,6 +9864,14 @@
                     skillCostTable: skillCostTable,
                     // 25波怪物数据方案
                     battleWaveSchemes: loadBattleWaveSchemes(),
+                    // 招募角色信息表
+                    recruitInfoTable: recruitInfoTable,
+                    recruitBoxLevelTable: recruitBoxLevelTable,
+                    recruitPoolTable: recruitPoolTable,
+                    // 玩家账号等级表
+                    accountLevelTable: accountLevelTable,
+                    // 玩家经济模拟方案
+                    economySchemes: loadEconomySchemes(),
                     lastUpdate: new Date().toISOString(),
                     version: VERSION
                 };
