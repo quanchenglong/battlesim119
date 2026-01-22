@@ -1730,7 +1730,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.2.0';
+        const VERSION = '2.3.0';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -8190,7 +8190,11 @@
         
         // 重置账号信息：清空当前资源、英雄恢复默认、等级重置、已拥有装备清空
         window.resetAccountInfo = function() {
-            if (!confirm('确定要重置账号信息吗？将清空当前资源、恢复默认英雄、重置等级、清空已拥有装备、重置天数和招募进度。')) return;
+            if (!confirm('确定要重置账号信息吗？将清空当前资源、恢复默认英雄、重置等级、清空已拥有装备、重置天数和招募进度；重置后初始获得20招募券，并清空副本挑战奖励与招募获得信息。')) return;
+            
+            // 清空副本挑战奖励信息、招募角色获得信息
+            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [] };
+            lastRecruitResult = { heroes: [], gold: 0 };
             
             // 重置当前天数为1
             playerResources.currentDay = 1;
@@ -8208,6 +8212,7 @@
             playerResources.gold = 0;
             playerResources.diamond = 0;
             bagItems = bagItems.filter(i => i.name !== '招募券');
+            bagItems.push({ id: Date.now(), name: '招募券', count: 20 });
             
             playerHeroes = [
                 { heroId: '11001', level: 1, copies: 0 },
@@ -8244,8 +8249,6 @@
             renderPlayerHeroes();
             renderPlayerOwnedEquipment();
             renderResourceGameplayList();
-            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [] };
-            lastRecruitResult = { heroes: [], gold: 0 };
             renderGameplayList();
             savePlayerEconomyData();
             showMessage('账号信息已重置', 'success');
