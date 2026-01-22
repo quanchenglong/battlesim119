@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -979,6 +979,7 @@
                 <button class="tab-button" onclick="switchTab('battle')">⚔️ 局内战斗模拟</button>
                 <button class="tab-button" onclick="switchTab('data')">📊 数据表导入</button>
                 <button class="tab-button" onclick="switchTab('import')">💾 方案导入</button>
+                <button class="tab-button" onclick="switchTab('economy')">💰 玩家经济模拟</button>
             </div>
 
             <!-- 主配置标签页 -->
@@ -1189,6 +1190,30 @@
                 </div>
 
                 <div class="scheme-manager">
+                    <div class="section-title">🎰 招募角色信息表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="recruitInfoFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadRecruitInfoTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('recruitInfoFileInput').click()" style="padding: 8px 20px;">上传招募角色信息表</button>
+                            <span id="recruitInfoTableStatus" style="color: #666; font-size: 0.9em;">未加载招募角色信息表</span>
+                        </div>
+                        <div id="recruitInfoTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
+                    <div class="section-title">📊 玩家账号等级表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="accountLevelTableFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadAccountLevelTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('accountLevelTableFileInput').click()" style="padding: 8px 20px;">上传玩家账号等级表</button>
+                            <span id="accountLevelTableStatus" style="color: #666; font-size: 0.9em;">未加载玩家账号等级表</span>
+                        </div>
+                        <div id="accountLevelTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
                     <div class="section-title">⚔️ 局内武器技能升级表管理</div>
                     <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -1299,10 +1324,226 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 玩家经济模拟标签页 -->
+            <div id="tab-economy" class="tab-content">
+                <div class="config-section">
+                    <div class="section-title">💾 经济方案管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                            <input type="text" id="economySchemeNameInput" placeholder="方案名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 140px;" />
+                            <button class="btn btn-primary" onclick="saveEconomyScheme()" style="padding: 8px 16px; font-size: 0.9em;">保存方案</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <select id="economySchemeSelect" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; min-width: 180px;">
+                                <option value="">选择方案...</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="loadEconomySchemeById()" style="padding: 8px 16px; font-size: 0.9em;">加载方案</button>
+                            <button class="btn btn-secondary" onclick="copyEconomyScheme()" style="padding: 8px 16px; font-size: 0.9em; background: #51cf66; color: white;">复制方案</button>
+                            <button class="btn btn-danger" onclick="deleteEconomyScheme()" style="padding: 8px 16px; font-size: 0.9em;">删除方案</button>
+                        </div>
+                        <div id="economySchemeStatus" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">💎 玩家账号每日资源</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div class="input-group">
+                                <label>体力</label>
+                                <input type="number" id="playerStamina" min="0" value="100" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">下一天增加</div>
+                            </div>
+                            <div class="input-group">
+                                <label>金币</label>
+                                <input type="number" id="playerDailyGold" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">下一天增加</div>
+                            </div>
+                            <div class="input-group">
+                                <label>钻石</label>
+                                <input type="number" id="playerDailyDiamond" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">下一天增加</div>
+                            </div>
+                            <div class="input-group">
+                                <label>招募券</label>
+                                <input type="number" id="playerDailyRecruitTickets" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">下一天增加</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <span style="font-weight: 600; color: #333;">当前天数：<span id="playerCurrentDay">1</span> 天</span>
+                            <button class="btn btn-primary" onclick="nextDay()" style="padding: 8px 16px; font-size: 0.9em;">📅 下一天</button>
+                            <button class="btn btn-primary" onclick="nextTenDays()" style="padding: 8px 16px; font-size: 0.9em;">📅 下10天</button>
+                            <button class="btn btn-danger" onclick="resetAccountInfo()" style="padding: 8px 16px; font-size: 0.9em;">🔄 重置账号信息</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">📊 玩家账号当前资源</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div class="input-group">
+                                <label>体力</label>
+                                <input type="number" id="playerCurrentStamina" min="0" value="100" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">当前可用体力（无上限）</div>
+                            </div>
+                            <div class="input-group">
+                                <label>金币</label>
+                                <input type="number" id="playerGold" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                            </div>
+                            <div class="input-group">
+                                <label>钻石</label>
+                                <input type="number" id="playerDiamond" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">📦 玩家账号等级及背包</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                            <div>
+                                <div class="section-title" style="font-size: 1em; margin-bottom: 15px;">账号信息</div>
+                                <div class="input-group">
+                                    <label>账号等级</label>
+                                    <input type="number" id="playerLevel" min="1" value="1" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                </div>
+                                <div class="input-group">
+                                    <label>经验值</label>
+                                    <input type="number" id="playerExp" min="0" value="0" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                </div>
+                                <div class="input-group">
+                                    <label>升级所需经验</label>
+                                    <input type="number" id="playerExpRequired" min="0" value="100" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95em;" />
+                                </div>
+                            </div>
+                            <div>
+                                <div class="section-title" style="font-size: 1em; margin-bottom: 15px;">背包物品</div>
+                                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                    <input type="text" id="newItemName" placeholder="物品名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1;" />
+                                    <input type="number" id="newItemCount" placeholder="数量" min="1" value="1" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; width: 100px;" />
+                                    <button class="btn btn-primary" onclick="addItemToBag()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加</button>
+                                </div>
+                                <div id="bagItemsList" style="max-height: 300px; overflow-y: auto;">
+                                    <!-- 背包物品列表将动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">🎮 玩家玩法汇总</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <input type="text" id="newGameplayName" placeholder="玩法名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 150px;" />
+                            <input type="number" id="newGameplayStaminaCost" placeholder="体力消耗" min="0" value="0" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; width: 120px;" />
+                            <button class="btn btn-primary" onclick="addGameplay()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加玩法</button>
+                        </div>
+                        <div id="gameplayList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                            <!-- 玩法列表将动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">💎 资源消耗玩法汇总</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <input type="text" id="newResourceGameplayName" placeholder="玩法名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 150px;" />
+                            <input type="text" id="newResourceGameplayItemName" placeholder="消耗道具名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; width: 150px;" />
+                            <button class="btn btn-primary" onclick="addResourceGameplay()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加玩法</button>
+                        </div>
+                        <div id="resourceGameplayList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;">
+                            <!-- 资源消耗玩法列表将动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">⭐ 英雄升级配置（1~30级所需本体数量）</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                            配置每个等级升级所需的英雄本体数量（1级为0，2级开始需要本体）
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <button type="button" id="heroUpgradeConfigToggleBtn" onclick="toggleHeroUpgradeConfigValues()" style="padding: 6px 14px; font-size: 0.9em; border: 2px solid #667eea; border-radius: 6px; background: #f0f4ff; color: #667eea; cursor: pointer;">展开数值</button>
+                        </div>
+                        <div id="heroUpgradeConfigValuesArea" style="display: none;">
+                            <div id="heroUpgradeConfigGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 10px; background: white; border-radius: 8px; border: 2px solid #e0e0e0;">
+                                <!-- 配置输入框将动态生成 -->
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <button class="btn btn-primary" onclick="resetHeroUpgradeConfig()" style="padding: 8px 16px; font-size: 0.9em;">🔄 恢复默认配置</button>
+                                <button class="btn btn-success" onclick="saveHeroUpgradeConfig()" style="padding: 8px 16px; font-size: 0.9em; margin-left: 10px;">💾 保存配置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">🦸 玩家英雄拥有情况</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <select id="addHeroSelect" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 200px;">
+                                <option value="">选择英雄（从英雄表读取）</option>
+                            </select>
+                            <input type="number" id="addHeroLevel" placeholder="等级" min="1" value="1" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; width: 100px;" />
+                            <button class="btn btn-primary" onclick="addPlayerHero()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加英雄</button>
+                        </div>
+                        <div id="playerHeroesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                            <!-- 英雄列表将动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="section-title">⚔️ 玩家装备拥有情况</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <select id="addEquipmentSelect" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 200px;">
+                                <option value="">选择装备（从装备表读取）</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="addPlayerEquipment()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加装备</button>
+                        </div>
+                        
+                        <div style="min-height: 200px;">
+                            <div class="section-title" style="font-size: 1em; margin-bottom: 15px;">📦 已拥有装备</div>
+                            <div id="playerOwnedEquipmentPanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; min-height: 100px; width: 100%; overflow: visible;">
+                                <!-- 已拥有装备面板将动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 主配置内容 -->
         <div id="main-content">
+        <div class="config-section">
+            <div class="section-title">💰 玩家经济模拟关联</div>
+            <div style="background: #f8f9ff; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; color: #333;">
+                        <input type="checkbox" id="useEconomySimulationCheckbox" onchange="toggleUseEconomySimulation()" style="width: 18px; height: 18px;" />
+                        <span>读取玩家经济模拟信息</span>
+                    </label>
+                    <div id="mainConfigEconomySchemeWrap" style="display: none; align-items: center; gap: 10px;">
+                        <span style="color: #666; font-size: 0.9em;">经济方案：</span>
+                        <select id="mainConfigEconomySchemeSelect" onchange="onMainConfigEconomySchemeChange()" style="padding: 6px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; min-width: 180px;">
+                            <option value="">选择方案...</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="mainConfigEconomyHint" style="display: none; margin-top: 10px; font-size: 0.85em; color: #666;">
+                    角色仅可选经济方案中的英雄且等级不超过已有等级；职业装备仅可选经济方案中已拥有的装备。
+                </div>
+            </div>
+        </div>
+
         <div class="scheme-manager">
             <div class="section-title">💾 方案管理（最多10个方案）</div>
             <div class="scheme-controls">
@@ -1489,7 +1730,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.0.13';
+        const VERSION = '2.2.0';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -1517,6 +1758,26 @@
         let monsterTable = []; // 怪物表数据
         const HERO_STORAGE_KEY = 'battleSimulatorHeroTable';
         const MONSTER_STORAGE_KEY = 'battleSimulatorMonsterTable';
+        
+        // 招募角色信息表数据
+        let recruitInfoTable = [];
+        const RECRUIT_INFO_STORAGE_KEY = 'battleSimulatorRecruitInfoTable';
+        const RECRUIT_BOX_LEVEL_STORAGE_KEY = 'battleSimulatorRecruitBoxLevelTable';
+        const RECRUIT_POOL_STORAGE_KEY = 'battleSimulatorRecruitPoolTable';
+        
+        // 招募奖池等级表数据（从HeroBoxLevel页签读取）
+        let recruitBoxLevelTable = []; // [{level, requiredCount}, ...]
+        // HeroPoolGroup 奖池表：C=等级 D=品质(1~4→3~6)或金币 E=权重
+        let recruitPoolTable = []; // [{level, qualityOrGold, weight}, ...]
+        
+        // 招募奖池状态
+        let recruitBoxLevel = 1; // 当前奖池等级，初始1级
+        let recruitCount = 0; // 当前招募次数
+        let lastRecruitResult = { heroes: [], gold: 0 }; // 本次招募获得，用于展示 { heroes: [{heroId, name, quality, count}], gold }
+        
+        // 玩家账号等级表：B列=等级 C列=升到本级别需要的经验，前5行表头
+        let accountLevelTable = []; // [{ level, expRequired }, ...]
+        const ACCOUNT_LEVEL_TABLE_STORAGE_KEY = 'battleSimulatorAccountLevelTable';
         
         // 部位类型
         const EQUIPMENT_TYPES = {
@@ -1760,7 +2021,7 @@
                         
                         const id = String(row[1] || '').trim(); // B列
                         const namecn = String(row[0] || '').trim(); // A列
-                        const quality = String(row[8] || '').trim(); // I列
+                        const quality = parseInt(row[8]) || 1; // I列，品质（1-6对应白、绿、蓝、紫、橙、红）
                         const heroclass = parseHeroClass(row[11]); // L列
                         
                         // 跳过空行和ID以119开头的测试数据
@@ -1770,7 +2031,7 @@
                         heroMap.set(id, {
                             id: id,
                             namecn: namecn,
-                            quality: quality,
+                            quality: quality, // 品质（1-6）
                             heroclass: heroclass,
                             levels: {} // 存储各等级属性
                         });
@@ -1894,6 +2155,12 @@
 
                     // 更新界面
                     updateHeroTableInfo();
+                    // 如果玩家经济模拟页签已打开，更新英雄选择下拉框
+                    const economyTab = document.getElementById('tab-economy');
+                    if (economyTab && economyTab.classList.contains('active')) {
+                        updateHeroSelects();
+                        renderPlayerHeroes();
+                    }
                     
                     showMessage(`成功加载${heroTable.length}个英雄，已保存到本地`, 'success');
                 } catch (error) {
@@ -2597,7 +2864,24 @@
                     
                     // 读取第一个工作表
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    let jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    // 如果使用表头模式读取失败，尝试使用行索引模式读取F列（索引5）
+                    // 先尝试表头模式，如果表头不存在，再使用索引模式
+                    const jsonDataByIndex = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // 如果表头模式读取的数据没有quality字段，尝试从索引模式读取F列
+                    if (jsonData.length > 0 && !jsonData[0].hasOwnProperty('quality') && 
+                        !jsonData[0].hasOwnProperty('Quality') && 
+                        !jsonData[0].hasOwnProperty('品质')) {
+                        // 使用索引模式，F列是索引5（A=0, B=1, C=2, D=3, E=4, F=5）
+                        jsonData.forEach((row, index) => {
+                            if (jsonDataByIndex[index + 1] && jsonDataByIndex[index + 1][5] !== undefined) {
+                                row['quality'] = jsonDataByIndex[index + 1][5];
+                            }
+                        });
+                        console.log('从F列（索引5）读取品质数据');
+                    }
 
                     // 解析装备数据（新格式：id, namecn, heroclass, type, hp, atk, def）
                     // heroclass 兼容数字和文本格式
@@ -2657,6 +2941,9 @@
                         const atk = parseInt(row['atk'] || row['ATK'] || row['攻击'] || 0);
                         const def = parseInt(row['def'] || row['DEF'] || row['防御'] || 0);
                         
+                        // 读取品质列（F列），尝试多种可能的列名
+                        const quality = parseInt(row['quality'] || row['Quality'] || row['品质'] || row['F'] || 0);
+                        
                         return {
                             id: id.toString(),
                             namecn: namecn,
@@ -2664,7 +2951,8 @@
                             type: type,
                             hp: hp,
                             atk: atk,
-                            def: def
+                            def: def,
+                            quality: quality || 1 // 默认品质为1（白色）
                         };
                     });
 
@@ -2681,6 +2969,12 @@
                     // 更新界面
                     updateJobEquipmentPanel();
                     updateEquipmentTableInfo();
+                    // 如果玩家经济模拟页签已打开，更新装备选择下拉框和装备面板
+                    const economyTab = document.getElementById('tab-economy');
+                    if (economyTab && economyTab.classList.contains('active')) {
+                        updateEquipmentSelect();
+                        renderPlayerOwnedEquipment();
+                    }
                     
                     showMessage(`成功加载${equipmentTable.length}件装备，已保存到本地`, 'success');
                 } catch (error) {
@@ -2691,10 +2985,192 @@
             reader.readAsArrayBuffer(file);
         };
 
+        // 加载招募角色信息表（头5行表头；HeroBoxLevel 页签 D=等级 E=升级需要招募次数）
+        window.loadRecruitInfoTable = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    recruitInfoTable = [];
+                    recruitBoxLevelTable = [];
+                    recruitPoolTable = [];
+                    
+                    // HeroBoxLevel 页签：D列=等级，E列=升级需要招募次数
+                    const heroBoxSheet = workbook.SheetNames.find(n => 
+                        String(n).toLowerCase().includes('heroboxlevel')
+                    );
+                    if (heroBoxSheet) {
+                        const raw = XLSX.utils.sheet_to_json(workbook.Sheets[heroBoxSheet], { header: 1 });
+                        raw.forEach((row) => {
+                            const level = parseInt(row[3]);
+                            const required = parseInt(row[4]);
+                            if (isNaN(level) || isNaN(required) || level < 1) return;
+                            recruitBoxLevelTable.push({ level, requiredCount: required });
+                        });
+                        recruitBoxLevelTable.sort((a, b) => a.level - b.level);
+                    }
+                    
+                    // HeroPoolGroup 页签：C=奖池等级 D=品质(1~4→3~6)或金币 E=权重
+                    const poolSheet = workbook.SheetNames.find(n => 
+                        String(n).toLowerCase().includes('heropoolgroup')
+                    );
+                    if (poolSheet) {
+                        const raw = XLSX.utils.sheet_to_json(workbook.Sheets[poolSheet], { header: 1 });
+                        raw.forEach((row) => {
+                            const level = parseInt(row[2]); // C列
+                            const d = parseInt(row[3]);     // D列
+                            const weight = parseInt(row[4]) || 0; // E列
+                            if (isNaN(level) || level < 1 || isNaN(d) || weight <= 0) return;
+                            recruitPoolTable.push({ level, qualityOrGold: d, weight });
+                        });
+                    }
+                    
+                    // 招募角色信息表：第一个工作表，头5行表头
+                    const first = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(first, { header: 1 });
+                    const header = rows.slice(0, 5);
+                    const dataRows = rows.slice(5);
+                    const headers = header[header.length - 1] || [];
+                    dataRows.forEach(row => {
+                        const obj = {};
+                        headers.forEach((h, i) => { obj[h] = row[i]; });
+                        if (Object.keys(obj).length) recruitInfoTable.push(obj);
+                    });
+                    
+                    const status = document.getElementById('recruitInfoTableStatus');
+                    const info = document.getElementById('recruitInfoTableInfo');
+                    if (status) status.textContent = `已加载招募表 ${recruitInfoTable.length} 条，奖池等级 ${recruitBoxLevelTable.length} 档，HeroPoolGroup ${recruitPoolTable.length} 条`;
+                    if (info) info.innerHTML = `HeroBoxLevel: ${recruitBoxLevelTable.length} 条；HeroPoolGroup: ${recruitPoolTable.length} 条；招募信息: ${recruitInfoTable.length} 条`;
+                    try {
+                        localStorage.setItem(RECRUIT_INFO_STORAGE_KEY, JSON.stringify(recruitInfoTable));
+                        localStorage.setItem(RECRUIT_BOX_LEVEL_STORAGE_KEY, JSON.stringify(recruitBoxLevelTable));
+                        localStorage.setItem(RECRUIT_POOL_STORAGE_KEY, JSON.stringify(recruitPoolTable));
+                    } catch (err) {}
+                    showMessage('招募角色信息表加载成功', 'success');
+                } catch (err) {
+                    console.error('加载招募角色信息表失败', err);
+                    showMessage('加载招募角色信息表失败：' + (err.message || err), 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // 从本地加载已保存的招募角色信息表
+        function loadSavedRecruitInfoTable() {
+            try {
+                const savedInfo = localStorage.getItem(RECRUIT_INFO_STORAGE_KEY);
+                if (savedInfo) {
+                    recruitInfoTable = JSON.parse(savedInfo);
+                    console.log('从本地加载招募角色信息表，共', recruitInfoTable.length, '条');
+                }
+                const savedLevel = localStorage.getItem(RECRUIT_BOX_LEVEL_STORAGE_KEY);
+                if (savedLevel) {
+                    recruitBoxLevelTable = JSON.parse(savedLevel);
+                    console.log('从本地加载招募奖池等级表，共', recruitBoxLevelTable.length, '档');
+                }
+                const savedPool = localStorage.getItem(RECRUIT_POOL_STORAGE_KEY);
+                if (savedPool) {
+                    recruitPoolTable = JSON.parse(savedPool);
+                    console.log('从本地加载HeroPoolGroup，共', recruitPoolTable.length, '条');
+                }
+                const status = document.getElementById('recruitInfoTableStatus');
+                const info = document.getElementById('recruitInfoTableInfo');
+                if (recruitInfoTable.length || recruitBoxLevelTable.length || recruitPoolTable.length) {
+                    if (status) status.textContent = `已加载招募表 ${recruitInfoTable.length} 条，奖池等级 ${recruitBoxLevelTable.length} 档，HeroPoolGroup ${recruitPoolTable.length} 条`;
+                    if (info) info.innerHTML = `HeroBoxLevel: ${recruitBoxLevelTable.length} 条；HeroPoolGroup: ${recruitPoolTable.length} 条；招募信息: ${recruitInfoTable.length} 条`;
+                }
+            } catch (err) {
+                console.error('加载招募角色信息表失败', err);
+            }
+        }
+
+        // 加载玩家账号等级表（前5行表头；B列=账号等级，C列=升到本级别需要的经验）
+        window.loadAccountLevelTable = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const first = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(first, { header: 1 });
+                    const dataRows = rows.slice(5);
+                    accountLevelTable = [];
+                    dataRows.forEach(row => {
+                        const level = parseInt(row[1]);
+                        const expRequired = parseInt(row[2]);
+                        if (isNaN(level) || level < 1) return;
+                        accountLevelTable.push({ level, expRequired: isNaN(expRequired) ? 0 : expRequired });
+                    });
+                    accountLevelTable.sort((a, b) => a.level - b.level);
+                    try {
+                        localStorage.setItem(ACCOUNT_LEVEL_TABLE_STORAGE_KEY, JSON.stringify(accountLevelTable));
+                    } catch (err) {}
+                    const status = document.getElementById('accountLevelTableStatus');
+                    const info = document.getElementById('accountLevelTableInfo');
+                    if (status) status.textContent = `已加载玩家账号等级表 ${accountLevelTable.length} 条`;
+                    if (info) info.innerHTML = `共 ${accountLevelTable.length} 条，升到各级所需经验已导入`;
+                    showMessage('玩家账号等级表加载成功', 'success');
+                } catch (err) {
+                    console.error('加载玩家账号等级表失败', err);
+                    showMessage('加载玩家账号等级表失败：' + (err.message || err), 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // 从本地加载已保存的玩家账号等级表
+        function loadSavedAccountLevelTable() {
+            try {
+                const raw = localStorage.getItem(ACCOUNT_LEVEL_TABLE_STORAGE_KEY);
+                if (raw) {
+                    accountLevelTable = JSON.parse(raw);
+                    console.log('从本地加载玩家账号等级表，共', accountLevelTable.length, '条');
+                }
+                const status = document.getElementById('accountLevelTableStatus');
+                const info = document.getElementById('accountLevelTableInfo');
+                if (accountLevelTable.length) {
+                    if (status) status.textContent = `已加载玩家账号等级表 ${accountLevelTable.length} 条`;
+                    if (info) info.innerHTML = `共 ${accountLevelTable.length} 条，升到各级所需经验`;
+                }
+            } catch (err) {
+                console.error('加载玩家账号等级表失败', err);
+            }
+        }
+
+        // 根据账号等级表获取「升到该级别需要的经验」；若表无此级则回退默认
+        function getExpRequiredForLevel(level) {
+            if (!accountLevelTable || !accountLevelTable.length) return null;
+            const row = accountLevelTable.find(r => r.level === level);
+            return row ? row.expRequired : null;
+        }
+
         // 更新职业装备面板
         function updateJobEquipmentPanel() {
             const panel = document.getElementById('jobEquipmentPanel');
             if (!panel) return;
+
+            const eco = getMainConfigEconomySchemeData();
+            const ownedEqIds = (useEconomySimulation && eco && Array.isArray(eco.playerEquipment))
+                ? new Set(eco.playerEquipment.map(x => String(x))) : null;
+
+            if (ownedEqIds) {
+                [1, 2, 3, 4].forEach(jobId => {
+                    const je = characterEquipment[jobId];
+                    if (!je) return;
+                    ['head', 'body', 'hand', 'foot'].forEach(type => {
+                        const eid = je[type];
+                        if (eid && !ownedEqIds.has(String(eid))) {
+                            je[type] = null;
+                        }
+                    });
+                });
+            }
 
             panel.innerHTML = Object.keys(JOB_NAMES).map(jobId => {
                 const jobIdNum = parseInt(jobId);
@@ -2854,7 +3330,10 @@
                         ${Object.keys(EQUIPMENT_TYPES).map(typeKey => {
                             const typeName = EQUIPMENT_TYPES[typeKey];
                             const typeKeyLower = typeKey.toLowerCase();
-                            const availableEquipments = equipmentByType[typeKeyLower] || [];
+                            let availableEquipments = equipmentByType[typeKeyLower] || [];
+                            if (ownedEqIds) {
+                                availableEquipments = availableEquipments.filter(eq => ownedEqIds.has(String(eq.id)));
+                            }
                             const currentEquipmentId = jobEquipment[typeKeyLower] || '';
                             const currentEquipment = currentEquipmentId ? equipmentTable.find(eq => eq.id === currentEquipmentId) : null;
                             
@@ -4358,10 +4837,23 @@
             }
             
             // 筛选与角色职业相同的英雄
-            const jobHeroes = heroTable.filter(hero => {
+            let jobHeroes = heroTable.filter(hero => {
                 const heroJob = parseInt(hero.heroclass) || 0;
                 return heroJob === char.job;
             });
+            
+            // 若勾选读取经济模拟：仅保留经济方案中已有的英雄
+            const eco = getMainConfigEconomySchemeData();
+            if (useEconomySimulation && eco && Array.isArray(eco.playerHeroes)) {
+                const allowedIds = new Set(eco.playerHeroes.map(h => String(h.heroId)));
+                jobHeroes = jobHeroes.filter(hero => allowedIds.has(String(hero.id)));
+                if (char.selectedHeroId && !allowedIds.has(String(char.selectedHeroId))) {
+                    char.selectedHeroId = null;
+                    char.selectedHeroLevel = null;
+                    const levelSel = document.querySelector(`.char-hero-level-select[data-char="${charId}"]`);
+                    if (levelSel) levelSel.innerHTML = '<option value="">请先选择英雄</option>';
+                }
+            }
             
             if (jobHeroes.length === 0) {
                 heroSelect.innerHTML = '<option value="">暂无该职业的英雄</option>';
@@ -4380,18 +4872,11 @@
                 option.value = hero.id;
                 option.textContent = `${hero.id} - ${hero.namecn}${hero.quality ? ' [' + hero.quality + ']' : ''}`;
                 
-                // 如果角色已选择该英雄，设置为选中
-                if (char.selectedHeroId === hero.id) {
-                    option.selected = true;
-                }
-                
+                if (char.selectedHeroId === hero.id) option.selected = true;
                 heroSelect.appendChild(option);
             });
             
-            // 如果角色已选择英雄，更新等级选择下拉框
-            if (char.selectedHeroId) {
-                updateCharacterHeroLevelSelect(charId);
-            }
+            if (char.selectedHeroId) updateCharacterHeroLevelSelect(charId);
         }
 
         // 更新角色的等级选择下拉框
@@ -4410,8 +4895,18 @@
             
             levelSelect.innerHTML = '<option value="">请选择等级</option>';
             
-            // 获取该英雄的所有等级
-            const levels = hero.levels ? Object.keys(hero.levels).map(l => parseInt(l)).sort((a, b) => a - b) : [];
+            let levels = hero.levels ? Object.keys(hero.levels).map(l => parseInt(l)).sort((a, b) => a - b) : [];
+            
+            // 若勾选读取经济模拟：等级不超过经济方案中该英雄的等级
+            const eco = getMainConfigEconomySchemeData();
+            if (useEconomySimulation && eco && Array.isArray(eco.playerHeroes)) {
+                const eh = eco.playerHeroes.find(h => String(h.heroId) === String(char.selectedHeroId));
+                const maxLevel = eh ? (eh.level || 1) : 0;
+                if (maxLevel > 0) levels = levels.filter(l => l <= maxLevel);
+                if (char.selectedHeroLevel != null && (eh ? char.selectedHeroLevel > maxLevel : true)) {
+                    char.selectedHeroLevel = eh ? Math.min(char.selectedHeroLevel, maxLevel) : null;
+                }
+            }
             
             if (levels.length === 0) {
                 levelSelect.innerHTML = '<option value="">该英雄暂无等级数据</option>';
@@ -4422,12 +4917,7 @@
                 const option = document.createElement('option');
                 option.value = level;
                 option.textContent = `等级 ${level}`;
-                
-                // 如果角色已选择该等级，设置为选中
-                if (char.selectedHeroLevel === level) {
-                    option.selected = true;
-                }
-                
+                if (char.selectedHeroLevel === level) option.selected = true;
                 levelSelect.appendChild(option);
             });
         }
@@ -7016,15 +7506,10 @@
             }
             
             // 激活对应的按钮
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach((btn, index) => {
-                if ((tabName === 'main' && index === 0) || 
-                    (tabName === 'battle' && index === 1) || 
-                    (tabName === 'data' && index === 2) || 
-                    (tabName === 'import' && index === 3)) {
-                    btn.classList.add('active');
-                }
-            });
+            const targetButton = document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
             
             // 如果是主配置标签页，需要将主配置内容移到标签页内
             if (tabName === 'main') {
@@ -7034,7 +7519,1947 @@
                     mainTab.appendChild(mainContent);
                 }
             }
+            
+            // 如果是玩家经济模拟标签页，初始化数据
+            if (tabName === 'economy') {
+                initEconomyTab();
+            }
         };
+
+        // ========== 玩家经济模拟 ==========
+        
+        // 玩家资源数据
+        let playerResources = {
+            stamina: 100,              // 每日体力（下一天增加）
+            currentStamina: 100,       // 当前体力
+            gold: 0,                   // 当前金币
+            diamond: 0,                // 当前钻石
+            currentDay: 1,             // 当前天数，默认 1
+            dailyGold: 0,              // 每日金币（下一天增加）
+            dailyDiamond: 0,           // 每日钻石（下一天增加）
+            dailyRecruitTickets: 0     // 每日招募券（下一天增加）
+        };
+        
+        // 玩家玩法列表
+        let gameplayList = [
+            { id: 1, name: '主线副本挑战', staminaCost: 10, mainDungeonConfig: { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] } }
+        ];
+        
+        // 资源消耗玩法列表
+        let resourceConsumptionGameplayList = [
+            { id: 1, name: '招募角色', itemName: '招募券', type: 'recruit' }
+        ];
+        
+        // 玩家账号信息
+        let playerAccount = {
+            level: 1,
+            exp: 0,
+            expRequired: 100
+        };
+        
+        // 背包物品
+        let bagItems = [];
+        
+        // 玩家拥有的英雄列表 [{heroId: '11001', level: 1, copies: 0}, ...]
+        let playerHeroes = [
+            { heroId: '11001', level: 1, copies: 0 },
+            { heroId: '11002', level: 1, copies: 0 },
+            { heroId: '11003', level: 1, copies: 0 },
+            { heroId: '11101', level: 1, copies: 0 },
+            { heroId: '11102', level: 1, copies: 0 }
+        ];
+        
+        // 英雄升级配置：1~30级需要的本体数量 [0, 1, 2, 3, 5, 7, 7, 9, 9, 12, 12, 12, 15, 15, 20, 20, 30, 30, 30, 40, 40, 40, 60, 60, 80, 80, 100, 100, 100, 120]
+        let heroUpgradeConfig = [0, 1, 2, 3, 5, 7, 7, 9, 9, 12, 12, 12, 15, 15, 20, 20, 30, 30, 30, 40, 40, 40, 60, 60, 80, 80, 100, 100, 100, 120];
+        const HERO_UPGRADE_CONFIG_STORAGE_KEY = 'battleSimulatorHeroUpgradeConfig';
+        
+        // 经济方案管理
+        const ECONOMY_SCHEMES_STORAGE_KEY = 'battleSimulatorEconomySchemes';
+        const MAX_ECONOMY_SCHEMES = 10;
+        let currentEconomySchemeId = null;
+        
+        // 玩家拥有的装备ID列表
+        let playerEquipment = [];
+        
+        // 主线副本挑战上次获得的资源
+        let lastMainDungeonGains = {
+            exp: 0,
+            levelUp: false,
+            equipment: []
+        };
+        
+        // 初始化玩家经济模拟标签页
+        function initEconomyTab() {
+            loadPlayerEconomyData();
+            updateEconomySchemeSelect();
+            renderGameplayList();
+            renderResourceGameplayList();
+            renderBagItems();
+            updateHeroSelects();
+            renderPlayerHeroes();
+            updateEquipmentSelect();
+            renderPlayerOwnedEquipment();
+            renderHeroUpgradeConfig();
+        }
+        
+        // 英雄升级配置数值区域展开/收起
+        let heroUpgradeConfigValuesExpanded = false;
+        
+        window.toggleHeroUpgradeConfigValues = function() {
+            heroUpgradeConfigValuesExpanded = !heroUpgradeConfigValuesExpanded;
+            const area = document.getElementById('heroUpgradeConfigValuesArea');
+            const btn = document.getElementById('heroUpgradeConfigToggleBtn');
+            if (area) area.style.display = heroUpgradeConfigValuesExpanded ? 'block' : 'none';
+            if (btn) btn.textContent = heroUpgradeConfigValuesExpanded ? '收起数值' : '展开数值';
+        };
+        
+        // 渲染英雄升级配置UI
+        function renderHeroUpgradeConfig() {
+            const gridEl = document.getElementById('heroUpgradeConfigGrid');
+            if (!gridEl) return;
+            
+            gridEl.innerHTML = Array.from({ length: 30 }, (_, i) => {
+                const level = i + 1;
+                const copies = heroUpgradeConfig[i] || 0;
+                return `
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: 600;">${level}级</label>
+                        <input type="number" id="heroUpgradeLevel${level}" value="${copies}" min="0" 
+                            onchange="updateHeroUpgradeConfig(${level}, this.value)" 
+                            style="padding: 6px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em; width: 100%;" />
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 加载玩家经济数据
+        function loadPlayerEconomyData() {
+            try {
+                const saved = localStorage.getItem('playerEconomyData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.resources) {
+                        Object.assign(playerResources, data.resources);
+                        if (playerResources.currentDay == null) playerResources.currentDay = 1;
+                        if (playerResources.dailyGold == null) playerResources.dailyGold = 0;
+                        if (playerResources.dailyDiamond == null) playerResources.dailyDiamond = 0;
+                        if (playerResources.dailyRecruitTickets == null) playerResources.dailyRecruitTickets = 0;
+                    }
+                    if (data.gameplayList) {
+                        gameplayList = data.gameplayList;
+                        // 确保主线副本挑战有品质权重配置
+                        const mainDungeon = gameplayList.find(g => g.name === '主线副本挑战');
+                        if (mainDungeon && !mainDungeon.mainDungeonConfig) {
+                            mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                        }
+                    }
+                    if (data.account) Object.assign(playerAccount, data.account);
+                    if (data.bagItems) bagItems = data.bagItems;
+                    if (data.playerHeroes && data.playerHeroes.length > 0) {
+                        playerHeroes = data.playerHeroes;
+                    }
+                    if (data.playerEquipment) {
+                        // 确保所有装备ID都是字符串格式，避免类型不匹配
+                        playerEquipment = data.playerEquipment.map(id => String(id));
+                    }
+                    if (data.resourceConsumptionGameplayList) {
+                        resourceConsumptionGameplayList = data.resourceConsumptionGameplayList;
+                    }
+                    if (data.recruitBoxLevel != null) recruitBoxLevel = data.recruitBoxLevel;
+                    if (data.recruitCount != null) recruitCount = data.recruitCount;
+                }
+            } catch (error) {
+                console.error('加载玩家经济数据失败:', error);
+            }
+            
+            // 如果玩家英雄列表为空，设置默认英雄
+            if (playerHeroes.length === 0) {
+                playerHeroes = [
+                    { heroId: '11001', level: 1, copies: 0 },
+                    { heroId: '11002', level: 1, copies: 0 },
+                    { heroId: '11003', level: 1, copies: 0 },
+                    { heroId: '11101', level: 1, copies: 0 },
+                    { heroId: '11102', level: 1, copies: 0 }
+                ];
+                savePlayerEconomyData();
+            }
+            
+            // 迁移旧数据：如果没有 copies 字段，添加默认值 0
+            playerHeroes.forEach(h => {
+                if (h.copies == null) h.copies = 0;
+            });
+            
+            // 加载英雄升级配置
+            loadHeroUpgradeConfig();
+        }
+        
+        // 加载英雄升级配置
+        function loadHeroUpgradeConfig() {
+            try {
+                const saved = localStorage.getItem(HERO_UPGRADE_CONFIG_STORAGE_KEY);
+                if (saved) {
+                    const config = JSON.parse(saved);
+                    if (Array.isArray(config) && config.length >= 30) {
+                        heroUpgradeConfig = config;
+                    }
+                }
+            } catch (err) {
+                console.error('加载英雄升级配置失败:', err);
+            }
+        }
+        
+        // 保存英雄升级配置
+        function saveHeroUpgradeConfig() {
+            try {
+                localStorage.setItem(HERO_UPGRADE_CONFIG_STORAGE_KEY, JSON.stringify(heroUpgradeConfig));
+                showMessage('英雄升级配置已保存', 'success');
+            } catch (err) {
+                console.error('保存英雄升级配置失败:', err);
+                showMessage('保存配置失败', 'error');
+            }
+        }
+        
+        // 更新英雄升级配置
+        window.updateHeroUpgradeConfig = function(level, value) {
+            if (level < 1 || level > 30) return;
+            const copies = Math.max(0, parseInt(value) || 0);
+            heroUpgradeConfig[level - 1] = copies;
+        }
+        
+        // 恢复默认英雄升级配置
+        window.resetHeroUpgradeConfig = function() {
+            if (!confirm('确定要恢复默认配置吗？')) return;
+            heroUpgradeConfig = [0, 1, 2, 3, 5, 7, 7, 9, 9, 12, 12, 12, 15, 15, 20, 20, 30, 30, 30, 40, 40, 40, 60, 60, 80, 80, 100, 100, 100, 120];
+            // 更新所有输入框
+            for (let i = 1; i <= 30; i++) {
+                const input = document.getElementById(`heroUpgradeLevel${i}`);
+                if (input) input.value = heroUpgradeConfig[i - 1];
+            }
+            saveHeroUpgradeConfig();
+            renderPlayerHeroes(); // 刷新英雄显示
+        }
+        
+        // 获取升级到指定等级需要的本体数量
+        function getCopiesNeededForLevel(targetLevel) {
+            if (targetLevel < 1 || targetLevel > 30) return 0;
+            return heroUpgradeConfig[targetLevel - 1] || 0;
+        }
+        
+        // 检查是否可以升级英雄
+        function canUpgradeHero(heroData) {
+            const currentLevel = heroData.level || 1;
+            if (currentLevel >= 30) return false;
+            const copiesNeeded = getCopiesNeededForLevel(currentLevel + 1);
+            const copies = heroData.copies || 0;
+            return copies >= copiesNeeded;
+        }
+        
+        // 升级英雄
+        window.upgradePlayerHero = function(heroId) {
+            const heroData = playerHeroes.find(h => String(h.heroId) === String(heroId));
+            if (!heroData) {
+                showMessage('未找到该英雄', 'error');
+                return;
+            }
+            
+            const currentLevel = heroData.level || 1;
+            if (currentLevel >= 30) {
+                showMessage('英雄已达到最高等级', 'error');
+                return;
+            }
+            
+            const nextLevel = currentLevel + 1;
+            const copiesNeeded = getCopiesNeededForLevel(nextLevel);
+            const copies = heroData.copies || 0;
+            
+            if (copies < copiesNeeded) {
+                showMessage(`升级需要 ${copiesNeeded} 个本体，当前只有 ${copies} 个`, 'error');
+                return;
+            }
+            
+            heroData.level = nextLevel;
+            heroData.copies -= copiesNeeded;
+            renderPlayerHeroes();
+            savePlayerEconomyData();
+            
+            const hero = heroTable.find(h => String(h.id) === String(heroId));
+            const heroName = hero ? hero.namecn : heroId;
+            showMessage(`${heroName} 升级到 ${nextLevel} 级！`, 'success');
+        }
+        
+        // 加载玩家经济数据
+        function loadPlayerEconomyData() {
+            try {
+                const saved = localStorage.getItem('playerEconomyData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.resources) {
+                        Object.assign(playerResources, data.resources);
+                        if (playerResources.currentDay == null) playerResources.currentDay = 1;
+                        if (playerResources.dailyGold == null) playerResources.dailyGold = 0;
+                        if (playerResources.dailyDiamond == null) playerResources.dailyDiamond = 0;
+                        if (playerResources.dailyRecruitTickets == null) playerResources.dailyRecruitTickets = 0;
+                    }
+                    if (data.gameplayList) {
+                        gameplayList = data.gameplayList;
+                        // 确保主线副本挑战有品质权重配置
+                        const mainDungeon = gameplayList.find(g => g.name === '主线副本挑战');
+                        if (mainDungeon && !mainDungeon.mainDungeonConfig) {
+                            mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                        }
+                    }
+                    if (data.account) Object.assign(playerAccount, data.account);
+                    if (data.bagItems) bagItems = data.bagItems;
+                    if (data.playerHeroes && data.playerHeroes.length > 0) {
+                        playerHeroes = data.playerHeroes;
+                    }
+                    if (data.playerEquipment) {
+                        // 确保所有装备ID都是字符串格式，避免类型不匹配
+                        playerEquipment = data.playerEquipment.map(id => String(id));
+                    }
+                    if (data.resourceConsumptionGameplayList) {
+                        resourceConsumptionGameplayList = data.resourceConsumptionGameplayList;
+                    }
+                    if (data.recruitBoxLevel != null) recruitBoxLevel = data.recruitBoxLevel;
+                    if (data.recruitCount != null) recruitCount = data.recruitCount;
+                }
+            } catch (error) {
+                console.error('加载玩家经济数据失败:', error);
+            }
+            
+            // 如果玩家英雄列表为空，设置默认英雄
+            if (playerHeroes.length === 0) {
+                playerHeroes = [
+                    { heroId: '11001', level: 1, copies: 0 },
+                    { heroId: '11002', level: 1, copies: 0 },
+                    { heroId: '11003', level: 1, copies: 0 },
+                    { heroId: '11101', level: 1, copies: 0 },
+                    { heroId: '11102', level: 1, copies: 0 }
+                ];
+                savePlayerEconomyData();
+            }
+            
+            // 迁移旧数据：如果没有 copies 字段，添加默认值 0
+            playerHeroes.forEach(h => {
+                if (h.copies == null) h.copies = 0;
+            });
+            
+            // 如果资源消耗玩法列表为空，设置默认招募角色玩法
+            if (resourceConsumptionGameplayList.length === 0) {
+                resourceConsumptionGameplayList = [
+                    { id: 1, name: '招募角色', itemName: '招募券', type: 'recruit' }
+                ];
+                savePlayerEconomyData();
+            }
+            
+            // 加载英雄升级配置
+            loadHeroUpgradeConfig();
+            
+            // 更新界面
+            const staminaInput = document.getElementById('playerStamina');
+            const currentStaminaInput = document.getElementById('playerCurrentStamina');
+            const goldInput = document.getElementById('playerGold');
+            const diamondInput = document.getElementById('playerDiamond');
+            const levelInput = document.getElementById('playerLevel');
+            const expInput = document.getElementById('playerExp');
+            const expRequiredInput = document.getElementById('playerExpRequired');
+            const dailyGoldInput = document.getElementById('playerDailyGold');
+            const dailyDiamondInput = document.getElementById('playerDailyDiamond');
+            const dailyRecruitInput = document.getElementById('playerDailyRecruitTickets');
+            const currentDayEl = document.getElementById('playerCurrentDay');
+            
+            const level = playerAccount.level != null ? playerAccount.level : 1;
+            const tblExp = getExpRequiredForLevel(level + 1);
+            if (tblExp != null) playerAccount.expRequired = tblExp;
+            if (staminaInput) staminaInput.value = playerResources.stamina;
+            if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina;
+            if (goldInput) goldInput.value = playerResources.gold;
+            if (diamondInput) diamondInput.value = playerResources.diamond;
+            if (levelInput) levelInput.value = playerAccount.level;
+            if (expInput) expInput.value = playerAccount.exp;
+            if (expRequiredInput) expRequiredInput.value = playerAccount.expRequired != null ? playerAccount.expRequired : 100;
+            if (dailyGoldInput) dailyGoldInput.value = playerResources.dailyGold != null ? playerResources.dailyGold : 0;
+            if (dailyDiamondInput) dailyDiamondInput.value = playerResources.dailyDiamond != null ? playerResources.dailyDiamond : 0;
+            if (dailyRecruitInput) dailyRecruitInput.value = playerResources.dailyRecruitTickets != null ? playerResources.dailyRecruitTickets : 0;
+            if (currentDayEl) currentDayEl.textContent = playerResources.currentDay != null ? playerResources.currentDay : 1;
+        }
+        
+        // 保存玩家经济数据
+        function savePlayerEconomyData() {
+            try {
+                const data = {
+                    resources: playerResources,
+                    gameplayList: gameplayList,
+                    account: playerAccount,
+                    bagItems: bagItems,
+                    playerHeroes: playerHeroes,
+                    playerEquipment: playerEquipment,
+                    resourceConsumptionGameplayList: resourceConsumptionGameplayList,
+                    recruitBoxLevel: recruitBoxLevel,
+                    recruitCount: recruitCount
+                };
+                localStorage.setItem('playerEconomyData', JSON.stringify(data));
+            } catch (error) {
+                console.error('保存玩家经济数据失败:', error);
+            }
+        }
+        
+        // ---------- 经济方案管理 ----------
+        function loadEconomySchemes() {
+            try {
+                const raw = localStorage.getItem(ECONOMY_SCHEMES_STORAGE_KEY);
+                if (!raw) return [];
+                const list = JSON.parse(raw);
+                return Array.isArray(list) ? list : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        
+        function updateEconomySchemeSelect() {
+            const selectEl = document.getElementById('economySchemeSelect');
+            const statusEl = document.getElementById('economySchemeStatus');
+            if (!selectEl) return;
+            const schemes = loadEconomySchemes();
+            const current = currentEconomySchemeId || (selectEl.value || '');
+            selectEl.innerHTML = '<option value="">选择方案...</option>';
+            schemes.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                if (s.id === current) opt.selected = true;
+                selectEl.appendChild(opt);
+            });
+            if (statusEl) {
+                statusEl.textContent = schemes.length
+                    ? `已保存 ${schemes.length} 个方案（最多 ${MAX_ECONOMY_SCHEMES} 个）`
+                    : '暂无保存的方案';
+            }
+        }
+        
+        window.saveEconomyScheme = function() {
+            const nameInput = document.getElementById('economySchemeNameInput');
+            const name = (nameInput && nameInput.value || '').trim();
+            if (!name) {
+                showMessage('请输入方案名称', 'error');
+                return;
+            }
+            const schemes = loadEconomySchemes();
+            const snapshot = {
+                resources: JSON.parse(JSON.stringify(playerResources)),
+                gameplayList: JSON.parse(JSON.stringify(gameplayList)),
+                account: JSON.parse(JSON.stringify(playerAccount)),
+                bagItems: JSON.parse(JSON.stringify(bagItems)),
+                playerHeroes: JSON.parse(JSON.stringify(playerHeroes)),
+                playerEquipment: JSON.parse(JSON.stringify(playerEquipment)),
+                resourceConsumptionGameplayList: JSON.parse(JSON.stringify(resourceConsumptionGameplayList)),
+                recruitBoxLevel: recruitBoxLevel,
+                recruitCount: recruitCount,
+                heroUpgradeConfig: JSON.parse(JSON.stringify(heroUpgradeConfig))
+            };
+            const id = 'eco_' + Date.now();
+            let list = schemes.filter(s => s.id !== currentEconomySchemeId);
+            if (currentEconomySchemeId) {
+                const idx = schemes.findIndex(s => s.id === currentEconomySchemeId);
+                if (idx >= 0) {
+                    const cur = { ...schemes[idx], name, ...snapshot };
+                    list = schemes.slice();
+                    list[idx] = cur;
+                    currentEconomySchemeId = cur.id;
+                    localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(list));
+                    updateEconomySchemeSelect();
+                    if (nameInput) nameInput.value = name;
+                    showMessage(`方案"${name}"已更新`, 'success');
+                    return;
+                }
+            }
+            if (list.length >= MAX_ECONOMY_SCHEMES) {
+                showMessage(`最多保存 ${MAX_ECONOMY_SCHEMES} 个方案，请先删除再保存`, 'error');
+                return;
+            }
+            const neu = { id, name, ...snapshot };
+            list.push(neu);
+            currentEconomySchemeId = id;
+            localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(list));
+            updateEconomySchemeSelect();
+            if (nameInput) nameInput.value = name;
+            showMessage(`方案"${name}"已保存`, 'success');
+        };
+        
+        window.loadEconomySchemeById = function() {
+            const selectEl = document.getElementById('economySchemeSelect');
+            const id = selectEl && selectEl.value;
+            if (!id) {
+                showMessage('请先选择要加载的方案', 'error');
+                return;
+            }
+            const schemes = loadEconomySchemes();
+            const s = schemes.find(x => x.id === id);
+            if (!s) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            if (s.resources) Object.assign(playerResources, s.resources);
+            if (s.account) Object.assign(playerAccount, s.account);
+            if (Array.isArray(s.bagItems)) bagItems = s.bagItems;
+            if (Array.isArray(s.playerHeroes)) playerHeroes = s.playerHeroes;
+            if (Array.isArray(s.playerEquipment)) playerEquipment = s.playerEquipment.map(x => String(x));
+            if (Array.isArray(s.gameplayList)) gameplayList = s.gameplayList;
+            if (Array.isArray(s.resourceConsumptionGameplayList)) resourceConsumptionGameplayList = s.resourceConsumptionGameplayList;
+            if (s.recruitBoxLevel != null) recruitBoxLevel = s.recruitBoxLevel;
+            if (s.recruitCount != null) recruitCount = s.recruitCount;
+            if (Array.isArray(s.heroUpgradeConfig) && s.heroUpgradeConfig.length >= 30) {
+                heroUpgradeConfig = s.heroUpgradeConfig;
+            }
+            currentEconomySchemeId = id;
+            savePlayerEconomyData();
+            if (Array.isArray(heroUpgradeConfig)) {
+                try {
+                    localStorage.setItem(HERO_UPGRADE_CONFIG_STORAGE_KEY, JSON.stringify(heroUpgradeConfig));
+                } catch (err) {}
+            }
+            // 刷新界面
+            const staminaInput = document.getElementById('playerStamina');
+            const currentStaminaInput = document.getElementById('playerCurrentStamina');
+            const goldInput = document.getElementById('playerGold');
+            const diamondInput = document.getElementById('playerDiamond');
+            const levelInput = document.getElementById('playerLevel');
+            const expInput = document.getElementById('playerExp');
+            const expRequiredInput = document.getElementById('playerExpRequired');
+            const dailyGoldInput = document.getElementById('playerDailyGold');
+            const dailyDiamondInput = document.getElementById('playerDailyDiamond');
+            const dailyRecruitInput = document.getElementById('playerDailyRecruitTickets');
+            const currentDayEl = document.getElementById('playerCurrentDay');
+            const nameInput = document.getElementById('economySchemeNameInput');
+            if (staminaInput) staminaInput.value = playerResources.stamina != null ? playerResources.stamina : 100;
+            if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina != null ? playerResources.currentStamina : 0;
+            if (goldInput) goldInput.value = playerResources.gold != null ? playerResources.gold : 0;
+            if (diamondInput) diamondInput.value = playerResources.diamond != null ? playerResources.diamond : 0;
+            const accLevel = playerAccount.level != null ? playerAccount.level : 1;
+            const accTbl = getExpRequiredForLevel(accLevel + 1);
+            if (accTbl != null) playerAccount.expRequired = accTbl;
+            if (levelInput) levelInput.value = playerAccount.level != null ? playerAccount.level : 1;
+            if (expInput) expInput.value = playerAccount.exp != null ? playerAccount.exp : 0;
+            if (expRequiredInput) expRequiredInput.value = playerAccount.expRequired != null ? playerAccount.expRequired : 100;
+            if (dailyGoldInput) dailyGoldInput.value = playerResources.dailyGold != null ? playerResources.dailyGold : 0;
+            if (dailyDiamondInput) dailyDiamondInput.value = playerResources.dailyDiamond != null ? playerResources.dailyDiamond : 0;
+            if (dailyRecruitInput) dailyRecruitInput.value = playerResources.dailyRecruitTickets != null ? playerResources.dailyRecruitTickets : 0;
+            if (currentDayEl) currentDayEl.textContent = playerResources.currentDay != null ? playerResources.currentDay : 1;
+            if (nameInput) nameInput.value = s.name || '';
+            renderBagItems();
+            renderPlayerHeroes();
+            renderGameplayList();
+            renderResourceGameplayList();
+            renderPlayerOwnedEquipment();
+            renderHeroUpgradeConfig();
+            updateEconomySchemeSelect();
+            showMessage(`已加载方案"${s.name}"`, 'success');
+        };
+        
+        window.deleteEconomyScheme = function() {
+            const selectEl = document.getElementById('economySchemeSelect');
+            const id = selectEl && selectEl.value;
+            if (!id) {
+                showMessage('请先选择要删除的方案', 'error');
+                return;
+            }
+            const schemes = loadEconomySchemes();
+            const s = schemes.find(x => x.id === id);
+            if (!s) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            if (!confirm(`确定删除方案"${s.name}"吗？`)) return;
+            const list = schemes.filter(x => x.id !== id);
+            localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(list));
+            if (currentEconomySchemeId === id) currentEconomySchemeId = null;
+            const nameInput = document.getElementById('economySchemeNameInput');
+            if (nameInput) nameInput.value = '';
+            updateEconomySchemeSelect();
+            showMessage(`方案"${s.name}"已删除`, 'success');
+        };
+        
+        window.copyEconomyScheme = function() {
+            const selectEl = document.getElementById('economySchemeSelect');
+            const id = selectEl && selectEl.value;
+            if (!id) {
+                showMessage('请先选择要复制的方案', 'error');
+                return;
+            }
+            const schemes = loadEconomySchemes();
+            const s = schemes.find(x => x.id === id);
+            if (!s) {
+                showMessage('方案不存在', 'error');
+                return;
+            }
+            if (schemes.length >= MAX_ECONOMY_SCHEMES) {
+                showMessage(`最多保存 ${MAX_ECONOMY_SCHEMES} 个方案，请先删除再复制`, 'error');
+                return;
+            }
+            let copyName = (s.name || '未命名') + ' - 副本';
+            let n = 1;
+            while (schemes.some(x => x.name === copyName)) {
+                copyName = (s.name || '未命名') + ' - 副本' + (++n);
+            }
+            const copy = {
+                id: 'eco_' + Date.now(),
+                name: copyName,
+                resources: JSON.parse(JSON.stringify(s.resources || {})),
+                gameplayList: JSON.parse(JSON.stringify(s.gameplayList || [])),
+                account: JSON.parse(JSON.stringify(s.account || {})),
+                bagItems: JSON.parse(JSON.stringify(s.bagItems || [])),
+                playerHeroes: JSON.parse(JSON.stringify(s.playerHeroes || [])),
+                playerEquipment: (s.playerEquipment || []).map(x => String(x)),
+                resourceConsumptionGameplayList: JSON.parse(JSON.stringify(s.resourceConsumptionGameplayList || [])),
+                recruitBoxLevel: s.recruitBoxLevel != null ? s.recruitBoxLevel : 1,
+                recruitCount: s.recruitCount != null ? s.recruitCount : 0,
+                heroUpgradeConfig: Array.isArray(s.heroUpgradeConfig) ? JSON.parse(JSON.stringify(s.heroUpgradeConfig)) : []
+            };
+            schemes.push(copy);
+            localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(schemes));
+            currentEconomySchemeId = copy.id;
+            updateEconomySchemeSelect();
+            const nameInput = document.getElementById('economySchemeNameInput');
+            if (nameInput) nameInput.value = copyName;
+            showMessage(`已复制方案为"${copyName}"`, 'success');
+        };
+        
+        // 推进 n 天，将每日资源 × n 加到当前资源
+        function advanceDays(n) {
+            if (n < 1) return;
+            const staminaInput = document.getElementById('playerStamina');
+            const dailyGoldInput = document.getElementById('playerDailyGold');
+            const dailyDiamondInput = document.getElementById('playerDailyDiamond');
+            const dailyRecruitInput = document.getElementById('playerDailyRecruitTickets');
+            
+            const perStamina = parseInt(staminaInput && staminaInput.value ? staminaInput.value : 0) || 0;
+            const perGold = parseInt(dailyGoldInput && dailyGoldInput.value ? dailyGoldInput.value : 0) || 0;
+            const perDiamond = parseInt(dailyDiamondInput && dailyDiamondInput.value ? dailyDiamondInput.value : 0) || 0;
+            const perTickets = parseInt(dailyRecruitInput && dailyRecruitInput.value ? dailyRecruitInput.value : 0) || 0;
+            
+            const addStamina = perStamina * n;
+            const addGold = perGold * n;
+            const addDiamond = perDiamond * n;
+            const addTickets = perTickets * n;
+            
+            playerResources.dailyGold = perGold;
+            playerResources.dailyDiamond = perDiamond;
+            playerResources.dailyRecruitTickets = perTickets;
+            
+            playerResources.currentStamina += addStamina;
+            playerResources.gold += addGold;
+            playerResources.diamond += addDiamond;
+            playerResources.currentDay = (playerResources.currentDay || 1) + n;
+            
+            if (addTickets > 0) {
+                const existing = bagItems.find(i => i.name === '招募券');
+                if (existing) existing.count += addTickets;
+                else bagItems.push({ id: Date.now(), name: '招募券', count: addTickets });
+            }
+            
+            const currentStaminaEl = document.getElementById('playerCurrentStamina');
+            const goldEl = document.getElementById('playerGold');
+            const diamondEl = document.getElementById('playerDiamond');
+            if (currentStaminaEl) currentStaminaEl.value = playerResources.currentStamina;
+            if (goldEl) goldEl.value = playerResources.gold;
+            if (diamondEl) diamondEl.value = playerResources.diamond;
+            
+            const currentDayEl = document.getElementById('playerCurrentDay');
+            if (currentDayEl) currentDayEl.textContent = playerResources.currentDay;
+            renderBagItems();
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            
+            const parts = [`第 ${playerResources.currentDay} 天`];
+            if (addStamina) parts.push(`体力 +${addStamina}`);
+            if (addGold) parts.push(`金币 +${addGold}`);
+            if (addDiamond) parts.push(`钻石 +${addDiamond}`);
+            if (addTickets) parts.push(`招募券 +${addTickets}`);
+            showMessage(parts.join('，') + (n > 1 ? `（推进${n}天）` : ''), 'success');
+        }
+        
+        // 下一天：将每日资源加到当前资源
+        window.nextDay = function() {
+            advanceDays(1);
+        };
+        
+        // 下10天：天数 +10，获得 10 倍每日资源
+        window.nextTenDays = function() {
+            advanceDays(10);
+        };
+        
+        // 重置账号信息：清空当前资源、英雄恢复默认、等级重置、已拥有装备清空
+        window.resetAccountInfo = function() {
+            if (!confirm('确定要重置账号信息吗？将清空当前资源、恢复默认英雄、重置等级、清空已拥有装备、重置天数和招募进度。')) return;
+            
+            // 重置当前天数为1
+            playerResources.currentDay = 1;
+            
+            // 重置招募角色的等级和经验
+            recruitBoxLevel = 1;
+            recruitCount = 0;
+            
+            // 当前体力初始与下一天体力相同（从输入框读取或使用默认值）
+            const staminaInput = document.getElementById('playerStamina');
+            const dailyStamina = staminaInput ? (parseInt(staminaInput.value) || 100) : (playerResources.stamina || 100);
+            playerResources.currentStamina = dailyStamina;
+            playerResources.stamina = dailyStamina; // 确保stamina也有值
+            
+            playerResources.gold = 0;
+            playerResources.diamond = 0;
+            bagItems = bagItems.filter(i => i.name !== '招募券');
+            
+            playerHeroes = [
+                { heroId: '11001', level: 1, copies: 0 },
+                { heroId: '11002', level: 1, copies: 0 },
+                { heroId: '11003', level: 1, copies: 0 },
+                { heroId: '11101', level: 1, copies: 0 },
+                { heroId: '11102', level: 1, copies: 0 }
+            ];
+            
+            playerAccount.level = 1;
+            playerAccount.exp = 0;
+            const resetExpReq = getExpRequiredForLevel(2);
+            playerAccount.expRequired = resetExpReq != null ? resetExpReq : 100;
+            
+            playerEquipment = [];
+            
+            const currentStaminaInput = document.getElementById('playerCurrentStamina');
+            const goldInput = document.getElementById('playerGold');
+            const diamondInput = document.getElementById('playerDiamond');
+            const levelInput = document.getElementById('playerLevel');
+            const expInput = document.getElementById('playerExp');
+            const expRequiredInput = document.getElementById('playerExpRequired');
+            const currentDayEl = document.getElementById('playerCurrentDay');
+            
+            if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina;
+            if (goldInput) goldInput.value = 0;
+            if (diamondInput) diamondInput.value = 0;
+            if (levelInput) levelInput.value = 1;
+            if (expInput) expInput.value = 0;
+            if (expRequiredInput) expRequiredInput.value = playerAccount.expRequired;
+            if (currentDayEl) currentDayEl.textContent = 1;
+            
+            renderBagItems();
+            renderPlayerHeroes();
+            renderPlayerOwnedEquipment();
+            renderResourceGameplayList();
+            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [] };
+            lastRecruitResult = { heroes: [], gold: 0 };
+            renderGameplayList();
+            savePlayerEconomyData();
+            showMessage('账号信息已重置', 'success');
+        };
+        
+        // 添加玩法
+        window.addGameplay = function() {
+            const nameInput = document.getElementById('newGameplayName');
+            const costInput = document.getElementById('newGameplayStaminaCost');
+            
+            if (!nameInput || !costInput) return;
+            
+            const name = nameInput.value.trim();
+            const staminaCost = parseInt(costInput.value) || 0;
+            
+            if (!name) {
+                showMessage('请输入玩法名称', 'error');
+                return;
+            }
+            
+            const newGameplay = {
+                id: Date.now(),
+                name: name,
+                staminaCost: staminaCost
+            };
+            
+            gameplayList.push(newGameplay);
+            nameInput.value = '';
+            costInput.value = '0';
+            
+            renderGameplayList();
+            savePlayerEconomyData();
+            showMessage(`玩法"${name}"已添加`, 'success');
+        };
+        
+        // 移除玩法
+        window.removeGameplay = function(gameplayId) {
+            gameplayList = gameplayList.filter(g => g.id !== gameplayId);
+            renderGameplayList();
+            savePlayerEconomyData();
+            showMessage('玩法已移除', 'success');
+        };
+        
+        // 从装备名称解析等级（如「坦克头白10级」-> 10）
+        function getEquipmentLevelFromName(eq) {
+            const name = (eq && eq.namecn) ? String(eq.namecn) : '';
+            const m = name.match(/(\d+)\s*级/);
+            return m ? parseInt(m[1], 10) : 1;
+        }
+        
+        // 按权重随机品质
+        function rollQualityByWeights(qualityWeights) {
+            const entries = Object.entries(qualityWeights || {}).filter(([_, w]) => (parseInt(w, 10) || 0) > 0);
+            if (entries.length === 0) return 1;
+            let total = 0;
+            for (const [_, w] of entries) total += parseInt(w, 10) || 0;
+            if (total <= 0) return 1;
+            let r = Math.random() * total;
+            for (const [q, w] of entries) {
+                const ww = parseInt(w, 10) || 0;
+                if (r < ww) return parseInt(q, 10) || 1;
+                r -= ww;
+            }
+            return parseInt(entries[0][0], 10) || 1;
+        }
+        
+        // 执行单次主线副本挑战的核心逻辑（返回 { leveledUp, dropped }）
+        function executeMainDungeonOnce(gameplay) {
+            const curLevel = playerAccount.level || 1;
+            playerAccount.exp += 10;
+            let leveledUp = false;
+            const expToNext = getExpRequiredForLevel(curLevel + 1);
+            const required = expToNext != null ? expToNext : (playerAccount.expRequired || 100);
+            if (playerAccount.exp >= required) {
+                playerAccount.level = curLevel + 1;
+                playerAccount.exp = 0;
+                const nextNext = getExpRequiredForLevel(playerAccount.level + 1);
+                playerAccount.expRequired = nextNext != null ? nextNext : Math.floor(required * 1.5);
+                leveledUp = true;
+            }
+            
+            const cfg = gameplay.mainDungeonConfig || { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+            const playerLevel = playerAccount.level || 1;
+            const count = Math.random() < 0.5 ? 1 : 2;
+            const qualityNames = { 1: '白', 2: '绿', 3: '蓝' };
+            const dropped = [];
+            
+            if (equipmentTable && equipmentTable.length > 0) {
+                for (let i = 0; i < count; i++) {
+                    const quality = rollQualityByWeights(cfg.qualityWeights);
+                    const job = 1 + Math.floor(Math.random() * 4);
+                    const candidates = equipmentTable.filter(eq => {
+                        const eqJob = parseInt(eq.heroclass) || 0;
+                        const eqQ = parseInt(eq.quality) || 1;
+                        const eqLevel = getEquipmentLevelFromName(eq);
+                        return eqJob === job && eqQ === quality && eqLevel === playerLevel;
+                    });
+                    let pick = null;
+                    if (candidates.length > 0) {
+                        pick = candidates[Math.floor(Math.random() * candidates.length)];
+                    } else {
+                        const anyLevel = equipmentTable.filter(eq => {
+                            const eqJob = parseInt(eq.heroclass) || 0;
+                            const eqQ = parseInt(eq.quality) || 1;
+                            return eqJob === job && eqQ === quality;
+                        });
+                        if (anyLevel.length > 0) {
+                            anyLevel.sort((a, b) => Math.abs(getEquipmentLevelFromName(a) - playerLevel) - Math.abs(getEquipmentLevelFromName(b) - playerLevel));
+                            pick = anyLevel[0];
+                        }
+                    }
+                    if (pick) {
+                        const id = String(pick.id);
+                        if (!playerEquipment.includes(id)) playerEquipment.push(id);
+                        dropped.push(`${pick.namecn || id}(${qualityNames[quality]})`);
+                    }
+                }
+            }
+            
+            return { leveledUp, dropped };
+        }
+        
+        // 执行玩法（消耗体力）
+        window.executeGameplay = function(gameplayId) {
+            const gameplay = gameplayList.find(g => g.id === gameplayId);
+            if (!gameplay) return;
+            
+            if (playerResources.currentStamina < gameplay.staminaCost) {
+                showMessage(`体力不足！需要${gameplay.staminaCost}点体力`, 'error');
+                return;
+            }
+            
+            playerResources.currentStamina -= gameplay.staminaCost;
+            const currentStaminaInput = document.getElementById('playerCurrentStamina');
+            if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina;
+            
+            if (gameplay.name === '主线副本挑战') {
+                const result = executeMainDungeonOnce(gameplay);
+                if (result.leveledUp) {
+                    const levelInput = document.getElementById('playerLevel');
+                    if (levelInput) levelInput.value = playerAccount.level;
+                    showMessage(`恭喜升级！当前等级：${playerAccount.level}`, 'success');
+                }
+                const expInput = document.getElementById('playerExp');
+                const expRequiredInput = document.getElementById('playerExpRequired');
+                const dispReq = getExpRequiredForLevel((playerAccount.level || 1) + 1);
+                if (expInput) expInput.value = playerAccount.exp;
+                if (expRequiredInput) expRequiredInput.value = dispReq != null ? dispReq : playerAccount.expRequired;
+                
+                lastMainDungeonGains = {
+                    exp: 10,
+                    levelUp: result.leveledUp,
+                    equipment: result.dropped
+                };
+                
+                if (result.dropped.length > 0) {
+                    renderPlayerOwnedEquipment();
+                    showMessage(`获得装备：${result.dropped.join('、')}`, 'success');
+                }
+                
+                renderGameplayList();
+            }
+            
+            savePlayerEconomyData();
+            showMessage(`已执行"${gameplay.name}"，消耗${gameplay.staminaCost}点体力`, 'success');
+        };
+        
+        // 执行玩法10次
+        window.executeGameplayTen = function(gameplayId) {
+            const gameplay = gameplayList.find(g => g.id === gameplayId);
+            if (!gameplay) return;
+            
+            const needed = gameplay.staminaCost * 10;
+            if (playerResources.currentStamina < needed) {
+                showMessage(`体力不足！需要${needed}点体力才能执行10次`, 'error');
+                return;
+            }
+            
+            if (gameplay.name === '主线副本挑战') {
+                let totalExp = 0, totalLevelUps = 0, allDropped = [];
+                const initialLevel = playerAccount.level || 1;
+                
+                for (let i = 0; i < 10; i++) {
+                    playerResources.currentStamina -= gameplay.staminaCost;
+                    const result = executeMainDungeonOnce(gameplay);
+                    totalExp += 10;
+                    if (result.leveledUp) totalLevelUps++;
+                    allDropped = allDropped.concat(result.dropped);
+                }
+                
+                const currentStaminaInput = document.getElementById('playerCurrentStamina');
+                if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina;
+                const expInput = document.getElementById('playerExp');
+                const expRequiredInput = document.getElementById('playerExpRequired');
+                const levelInput = document.getElementById('playerLevel');
+                const dispReq = getExpRequiredForLevel((playerAccount.level || 1) + 1);
+                if (expInput) expInput.value = playerAccount.exp;
+                if (expRequiredInput) expRequiredInput.value = dispReq != null ? dispReq : playerAccount.expRequired;
+                if (levelInput) levelInput.value = playerAccount.level;
+                
+                lastMainDungeonGains = {
+                    exp: totalExp,
+                    levelUp: totalLevelUps > 0,
+                    equipment: allDropped
+                };
+                
+                if (allDropped.length > 0) {
+                    renderPlayerOwnedEquipment();
+                }
+                
+                renderGameplayList();
+                savePlayerEconomyData();
+                
+                const msg = `已执行10次，消耗${needed}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${allDropped.length > 0 ? `，获得${allDropped.length}件装备` : ''}`;
+                showMessage(msg, 'success');
+            } else {
+                showMessage('该功能仅支持主线副本挑战', 'error');
+            }
+        };
+        
+        // 挑战到无体力
+        window.executeGameplayUntilNoStamina = function(gameplayId) {
+            const gameplay = gameplayList.find(g => g.id === gameplayId);
+            if (!gameplay) return;
+            
+            if (playerResources.currentStamina < gameplay.staminaCost) {
+                showMessage(`体力不足！需要${gameplay.staminaCost}点体力`, 'error');
+                return;
+            }
+            
+            if (gameplay.name === '主线副本挑战') {
+                let count = 0, totalExp = 0, totalLevelUps = 0, allDropped = [];
+                const initialLevel = playerAccount.level || 1;
+                
+                while (playerResources.currentStamina >= gameplay.staminaCost) {
+                    playerResources.currentStamina -= gameplay.staminaCost;
+                    const result = executeMainDungeonOnce(gameplay);
+                    count++;
+                    totalExp += 10;
+                    if (result.leveledUp) totalLevelUps++;
+                    allDropped = allDropped.concat(result.dropped);
+                }
+                
+                const currentStaminaInput = document.getElementById('playerCurrentStamina');
+                if (currentStaminaInput) currentStaminaInput.value = playerResources.currentStamina;
+                const expInput = document.getElementById('playerExp');
+                const expRequiredInput = document.getElementById('playerExpRequired');
+                const levelInput = document.getElementById('playerLevel');
+                const dispReq = getExpRequiredForLevel((playerAccount.level || 1) + 1);
+                if (expInput) expInput.value = playerAccount.exp;
+                if (expRequiredInput) expRequiredInput.value = dispReq != null ? dispReq : playerAccount.expRequired;
+                if (levelInput) levelInput.value = playerAccount.level;
+                
+                lastMainDungeonGains = {
+                    exp: totalExp,
+                    levelUp: totalLevelUps > 0,
+                    equipment: allDropped
+                };
+                
+                if (allDropped.length > 0) {
+                    renderPlayerOwnedEquipment();
+                }
+                
+                renderGameplayList();
+                savePlayerEconomyData();
+                
+                const msg = `已执行${count}次，消耗${count * gameplay.staminaCost}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${allDropped.length > 0 ? `，获得${allDropped.length}件装备` : ''}`;
+                showMessage(msg, 'success');
+            } else {
+                showMessage('该功能仅支持主线副本挑战', 'error');
+            }
+        };
+        
+        // 渲染玩法列表
+        function renderGameplayList() {
+            const listEl = document.getElementById('gameplayList');
+            if (!listEl) return;
+            
+            if (gameplayList.length === 0) {
+                listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无玩法，请添加玩法</div>';
+                return;
+            }
+            
+            listEl.innerHTML = gameplayList.map(gameplay => {
+                if (gameplay.name === '主线副本挑战' && gameplay.mainDungeonConfig) {
+                    const cfg = gameplay.mainDungeonConfig;
+                    const qw = cfg.qualityWeights || { 1: 60, 2: 30, 3: 10 };
+                    const q1 = qw[1] != null ? qw[1] : 60;
+                    const q2 = qw[2] != null ? qw[2] : 30;
+                    const q3 = qw[3] != null ? qw[3] : 10;
+                    return `
+                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="font-weight: 600; color: #333; font-size: 1em;">${gameplay.name}</div>
+                                <button class="btn btn-danger" onclick="removeGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                            </div>
+                            <div style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+                                体力消耗：<span style="color: #ff6b6b; font-weight: 600;">${gameplay.staminaCost}</span> 点
+                            </div>
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9ff; border-radius: 6px; font-size: 0.9em;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">装备品质与权重（1白 2绿 3蓝）</div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <div><label style="color: #666;">品质1权重</label><input type="number" min="0" value="${q1}" onchange="updateMainDungeonQualityWeight(1, this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" /></div>
+                                    <div><label style="color: #666;">品质2权重</label><input type="number" min="0" value="${q2}" onchange="updateMainDungeonQualityWeight(2, this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" /></div>
+                                    <div><label style="color: #666;">品质3权重</label><input type="number" min="0" value="${q3}" onchange="updateMainDungeonQualityWeight(3, this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" /></div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+                                <button class="btn btn-primary" onclick="executeGameplay(${gameplay.id})" style="padding: 8px; font-size: 0.9em;">执行1次</button>
+                                <button class="btn btn-primary" onclick="executeGameplayTen(${gameplay.id})" style="padding: 8px; font-size: 0.9em;" ${playerResources.currentStamina < gameplay.staminaCost * 10 ? 'disabled' : ''}>执行10次</button>
+                                <button class="btn btn-primary" onclick="executeGameplayUntilNoStamina(${gameplay.id})" style="padding: 8px; font-size: 0.9em;" ${playerResources.currentStamina < gameplay.staminaCost ? 'disabled' : ''}>挑战到无体力</button>
+                            </div>
+                            ${lastMainDungeonGains.exp > 0 || lastMainDungeonGains.equipment.length > 0 ? `
+                            <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border-radius: 6px; border: 1px solid #339af0;">
+                                <div style="font-weight: 600; color: #1864ab; font-size: 0.9em; margin-bottom: 6px;">本次所有获得的资源</div>
+                                <div style="font-size: 0.85em; color: #333;">
+                                    ${lastMainDungeonGains.exp > 0 ? `<div>经验：+${lastMainDungeonGains.exp}</div>` : ''}
+                                    ${lastMainDungeonGains.levelUp ? `<div style="color: #51cf66; font-weight: 600;">等级提升：${playerAccount.level}</div>` : ''}
+                                    ${lastMainDungeonGains.equipment.length > 0 ? `<div>装备：${lastMainDungeonGains.equipment.join('、')}</div>` : ''}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                return `
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 600; color: #333; font-size: 1em;">${gameplay.name}</div>
+                            <button class="btn btn-danger" onclick="removeGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        </div>
+                        <div style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+                            体力消耗：<span style="color: #ff6b6b; font-weight: 600;">${gameplay.staminaCost}</span> 点
+                        </div>
+                        <button class="btn btn-primary" onclick="executeGameplay(${gameplay.id})" style="width: 100%; padding: 8px; font-size: 0.9em;">执行玩法</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 更新主线副本品质权重
+        window.updateMainDungeonQualityWeight = function(quality, value) {
+            const g = gameplayList.find(x => x.name === '主线副本挑战');
+            if (!g || !g.mainDungeonConfig) return;
+            if (!g.mainDungeonConfig.qualityWeights) g.mainDungeonConfig.qualityWeights = {};
+            g.mainDungeonConfig.qualityWeights[quality] = parseInt(value, 10) || 0;
+            savePlayerEconomyData();
+        };
+        
+        // 添加资源消耗玩法
+        window.addResourceGameplay = function() {
+            const nameInput = document.getElementById('newResourceGameplayName');
+            const itemNameInput = document.getElementById('newResourceGameplayItemName');
+            
+            if (!nameInput || !itemNameInput) return;
+            
+            const name = nameInput.value.trim();
+            const itemName = itemNameInput.value.trim();
+            
+            if (!name) {
+                showMessage('请输入玩法名称', 'error');
+                return;
+            }
+            
+            if (!itemName) {
+                showMessage('请输入消耗道具名称', 'error');
+                return;
+            }
+            
+            const maxId = resourceConsumptionGameplayList.length > 0 
+                ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                : 0;
+            const newGameplay = {
+                id: maxId + 1,
+                name: name,
+                itemName: itemName,
+                type: 'custom'
+            };
+            
+            resourceConsumptionGameplayList.push(newGameplay);
+            nameInput.value = '';
+            itemNameInput.value = '';
+            
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            showMessage(`玩法"${name}"已添加`, 'success');
+        };
+        
+        // 移除资源消耗玩法
+        window.removeResourceGameplay = function(gameplayId) {
+            resourceConsumptionGameplayList = resourceConsumptionGameplayList.filter(g => g.id !== gameplayId);
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            showMessage('玩法已移除', 'success');
+        };
+        
+        // 奖池等级：累计招募次数达到 HeroBoxLevel 表对应档位即升级
+        function totalRecruitsToReachLevel(targetLevel) {
+            if (!recruitBoxLevelTable.length) return 0;
+            let sum = 0;
+            for (const row of recruitBoxLevelTable) {
+                if (row.level > targetLevel) break;
+                sum += row.requiredCount || 0;
+            }
+            return sum;
+        }
+        
+        function getRecruitProgress() {
+            const count = recruitCount || 0;
+            let level = 1;
+            if (recruitBoxLevelTable.length) {
+                for (const row of recruitBoxLevelTable) {
+                    if (totalRecruitsToReachLevel(row.level) <= count) level = row.level;
+                }
+            }
+            const next = recruitBoxLevelTable.find(r => r.level === level + 1);
+            const neededForNext = next ? next.requiredCount : 0;
+            const base = totalRecruitsToReachLevel(level);
+            const currentProgress = Math.max(0, count - base);
+            const isMax = !next;
+            return { level, count, neededForNext, currentProgress, isMax };
+        }
+        
+        function applyRecruitCount(n) {
+            recruitCount = (recruitCount || 0) + n;
+            const p = getRecruitProgress();
+            recruitBoxLevel = p.level;
+        }
+        
+        // 按权重从奖池中抽一行（HeroPoolGroup，当前等级）
+        function rollRecruitPoolRow(level) {
+            const rows = recruitPoolTable.filter(r => r.level === level);
+            if (!rows.length) return null;
+            let total = 0;
+            for (const r of rows) total += (r.weight || 0);
+            if (total <= 0) return rows[0] || null;
+            let rnd = Math.random() * total;
+            for (const r of rows) {
+                const w = r.weight || 0;
+                if (rnd < w) return r;
+                rnd -= w;
+            }
+            return rows[rows.length - 1];
+        }
+        
+        // 单次招募抽奖：返回 { heroId 或 null, gold }
+        function performRecruitDraw(level) {
+            const row = rollRecruitPoolRow(level);
+            if (!row) return { heroId: null, gold: 0 };
+            const d = row.qualityOrGold;
+            if (d >= 1 && d <= 4) {
+                const quality = d + 2; // 1→3, 2→4, 3→5, 4→6
+                const candidates = (heroTable || []).filter(h => (parseInt(h.quality) || 0) === quality);
+                if (!candidates.length) return { heroId: null, gold: 0 };
+                const hero = candidates[Math.floor(Math.random() * candidates.length)];
+                return { heroId: hero.id, gold: 0 };
+            }
+            const gold = Math.max(0, parseInt(d) || 0);
+            return { heroId: null, gold };
+        }
+        
+        // 执行 N 次招募抽奖，更新玩家英雄/金币，返回 { heroes: [{heroId, name, quality, count}], gold }
+        function runRecruitDraws(n) {
+            const level = getRecruitProgress().level;
+            const heroMap = {}; // {heroId: {heroId, name, quality, count}}
+            let gold = 0;
+            
+            for (let i = 0; i < n; i++) {
+                const r = performRecruitDraw(level);
+                if (r.heroId) {
+                    const heroId = String(r.heroId);
+                    const hero = heroTable.find(h => String(h.id) === heroId);
+                    const heroName = hero ? hero.namecn : heroId;
+                    const heroQuality = hero ? (parseInt(hero.quality) || 1) : 1;
+                    
+                    // 如果已有该英雄，增加 copies；否则添加新英雄
+                    const existing = playerHeroes.find(h => String(h.heroId) === heroId);
+                    if (existing) {
+                        existing.copies = (existing.copies || 0) + 1;
+                    } else {
+                        playerHeroes.push({ heroId: heroId, level: 1, copies: 0 });
+                    }
+                    
+                    // 记录到结果中
+                    if (!heroMap[heroId]) {
+                        heroMap[heroId] = { heroId, name: heroName, quality: heroQuality, count: 0 };
+                    }
+                    heroMap[heroId].count++;
+                } else if (r.gold > 0) {
+                    playerResources.gold = (playerResources.gold || 0) + r.gold;
+                    gold += r.gold;
+                }
+            }
+            
+            return { heroes: Object.values(heroMap), gold };
+        }
+        
+        // 执行招募：单抽
+        window.executeRecruitSingle = function() {
+            const itemName = '招募券';
+            const item = bagItems.find(item => item.name === itemName);
+            if (!item || item.count < 1) {
+                showMessage(`背包中没有足够的${itemName}！`, 'error');
+                return;
+            }
+            item.count -= 1;
+            if (item.count === 0) bagItems = bagItems.filter(i => i.name !== itemName);
+            applyRecruitCount(1);
+            lastRecruitResult = runRecruitDraws(1);
+            renderBagItems();
+            renderPlayerHeroes();
+            renderResourceGameplayList();
+            syncEconomyGoldDisplay();
+            savePlayerEconomyData();
+            showMessage(`消耗1张${itemName}，单抽完成`, 'success');
+        };
+        
+        // 执行招募：10连抽
+        window.executeRecruitTen = function() {
+            const itemName = '招募券';
+            const item = bagItems.find(item => item.name === itemName);
+            if (!item || item.count < 10) {
+                showMessage(`背包中没有足够的${itemName}！需要10张`, 'error');
+                return;
+            }
+            item.count -= 10;
+            if (item.count === 0) bagItems = bagItems.filter(i => i.name !== itemName);
+            applyRecruitCount(10);
+            lastRecruitResult = runRecruitDraws(10);
+            renderBagItems();
+            renderPlayerHeroes();
+            renderResourceGameplayList();
+            syncEconomyGoldDisplay();
+            savePlayerEconomyData();
+            showMessage(`消耗10张${itemName}，10连抽完成`, 'success');
+        };
+        
+        // 执行招募：抽光
+        window.executeRecruitAll = function() {
+            const itemName = '招募券';
+            const item = bagItems.find(item => item.name === itemName);
+            if (!item || item.count === 0) {
+                showMessage(`背包中没有${itemName}！`, 'error');
+                return;
+            }
+            const usedCount = item.count;
+            bagItems = bagItems.filter(i => i.name !== itemName);
+            applyRecruitCount(usedCount);
+            lastRecruitResult = runRecruitDraws(usedCount);
+            renderBagItems();
+            renderPlayerHeroes();
+            renderResourceGameplayList();
+            syncEconomyGoldDisplay();
+            savePlayerEconomyData();
+            showMessage(`消耗${usedCount}张${itemName}，抽光完成`, 'success');
+        };
+        
+        function syncEconomyGoldDisplay() {
+            const el = document.getElementById('playerGold');
+            if (el) el.value = playerResources.gold || 0;
+        }
+        
+        // 渲染资源消耗玩法列表
+        function renderResourceGameplayList() {
+            const listEl = document.getElementById('resourceGameplayList');
+            if (!listEl) return;
+            
+            if (resourceConsumptionGameplayList.length === 0) {
+                listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无资源消耗玩法，请添加玩法</div>';
+                return;
+            }
+            
+            listEl.innerHTML = resourceConsumptionGameplayList.map(gameplay => {
+                // 获取背包中该道具的数量
+                const item = bagItems.find(i => i.name === gameplay.itemName);
+                const itemCount = item ? item.count : 0;
+                
+                // 如果是招募角色玩法，显示特殊按钮
+                if (gameplay.type === 'recruit') {
+                    const prog = getRecruitProgress();
+                    const need = prog.neededForNext || 1;
+                    const pct = prog.isMax ? 100 : Math.min(100, Math.floor((prog.currentProgress / need) * 100));
+                    const progressBarHtml = prog.isMax
+                        ? '<div style="font-size: 0.85em; color: #51cf66;">已满级</div>'
+                        : `
+                        <div style="margin-bottom: 4px; font-size: 0.85em; color: #666;">升级进度：${prog.currentProgress} / ${need} 次</div>
+                        <div style="height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden;">
+                            <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s;"></div>
+                        </div>
+                        `;
+                    return `
+                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="font-weight: 600; color: #333; font-size: 1em;">${gameplay.name}</div>
+                                <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                            </div>
+                            <div style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+                                消耗道具：<span style="color: #667eea; font-weight: 600;">${gameplay.itemName}</span>
+                                <span style="margin-left: 10px;">拥有：<span style="color: ${itemCount > 0 ? '#51cf66' : '#ff6b6b'}; font-weight: 600;">${itemCount}</span> 张</span>
+                            </div>
+                            <div style="margin-bottom: 12px; padding: 10px; background: #f8f9ff; border-radius: 6px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">当前招募等级：<span style="color: #667eea;">${prog.level}</span> 级</div>
+                                ${progressBarHtml}
+                            </div>
+                            ${(lastRecruitResult.heroes && lastRecruitResult.heroes.length > 0) || lastRecruitResult.gold > 0 ? `
+                            <div style="margin-bottom: 12px; padding: 10px; background: #e8f5e9; border-radius: 6px; border: 1px solid #51cf66;">
+                                <div style="font-weight: 600; color: #2e7d32; font-size: 0.9em; margin-bottom: 6px;">本次招募获得</div>
+                                ${lastRecruitResult.heroes && lastRecruitResult.heroes.length > 0 ? `
+                                <div style="margin-bottom: 6px;">
+                                    ${lastRecruitResult.heroes.map(h => {
+                                        const qualityNames = { 1: '白', 2: '绿', 3: '蓝', 4: '紫', 5: '橙', 6: '红' };
+                                        const qualityName = qualityNames[h.quality] || '白';
+                                        return `<div style="font-size: 0.85em; color: #333; margin-bottom: 3px;">
+                                            <span style="font-weight: 600; color: #667eea;">${h.name}</span> 
+                                            <span style="color: #999; font-size: 0.8em;">[${qualityName}]</span>
+                                            <span style="color: #666;"> × ${h.count}</span>
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                                ` : ''}
+                                ${lastRecruitResult.gold > 0 ? `
+                                <div style="font-size: 0.9em; color: #333;">金币 <span style="font-weight: 600; color: #ffc107;">${lastRecruitResult.gold}</span></div>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                <button class="btn btn-primary" onclick="executeRecruitSingle()" style="padding: 8px; font-size: 0.85em;" ${itemCount < 1 ? 'disabled' : ''}>单抽 (1张)</button>
+                                <button class="btn btn-primary" onclick="executeRecruitTen()" style="padding: 8px; font-size: 0.85em;" ${itemCount < 10 ? 'disabled' : ''}>10连抽 (10张)</button>
+                                <button class="btn btn-primary" onclick="executeRecruitAll()" style="padding: 8px; font-size: 0.85em;" ${itemCount === 0 ? 'disabled' : ''}>抽光 (${itemCount}张)</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 普通资源消耗玩法
+                    return `
+                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="font-weight: 600; color: #333; font-size: 1em;">${gameplay.name}</div>
+                                <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                            </div>
+                            <div style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+                                消耗道具：<span style="color: #667eea; font-weight: 600;">${gameplay.itemName}</span>
+                                <span style="margin-left: 10px;">拥有：<span style="color: ${itemCount > 0 ? '#51cf66' : '#ff6b6b'}; font-weight: 600;">${itemCount}</span></span>
+                            </div>
+                            <button class="btn btn-primary" onclick="executeResourceGameplay(${gameplay.id})" style="width: 100%; padding: 8px; font-size: 0.9em;" ${itemCount === 0 ? 'disabled' : ''}>执行玩法</button>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+        
+        // 执行普通资源消耗玩法
+        window.executeResourceGameplay = function(gameplayId) {
+            const gameplay = resourceConsumptionGameplayList.find(g => g.id === gameplayId);
+            if (!gameplay) return;
+            
+            const item = bagItems.find(i => i.name === gameplay.itemName);
+            if (!item || item.count < 1) {
+                showMessage(`背包中没有足够的${gameplay.itemName}！`, 'error');
+                return;
+            }
+            
+            item.count -= 1;
+            if (item.count === 0) {
+                bagItems = bagItems.filter(i => i.name !== gameplay.itemName);
+            }
+            
+            renderBagItems();
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            showMessage(`消耗1个${gameplay.itemName}，执行${gameplay.name}`, 'success');
+        };
+        
+        // 添加物品到背包
+        window.addItemToBag = function() {
+            const nameInput = document.getElementById('newItemName');
+            const countInput = document.getElementById('newItemCount');
+            
+            if (!nameInput || !countInput) return;
+            
+            const name = nameInput.value.trim();
+            const count = parseInt(countInput.value) || 1;
+            
+            if (!name) {
+                showMessage('请输入物品名称', 'error');
+                return;
+            }
+            
+            // 检查是否已存在
+            const existingItem = bagItems.find(item => item.name === name);
+            if (existingItem) {
+                existingItem.count += count;
+            } else {
+                bagItems.push({
+                    id: Date.now(),
+                    name: name,
+                    count: count
+                });
+            }
+            
+            nameInput.value = '';
+            countInput.value = '1';
+            
+            renderBagItems();
+            savePlayerEconomyData();
+            showMessage(`物品"${name}"已添加到背包`, 'success');
+        };
+        
+        // 移除背包物品
+        window.removeBagItem = function(itemId) {
+            bagItems = bagItems.filter(item => item.id !== itemId);
+            renderBagItems();
+            savePlayerEconomyData();
+            showMessage('物品已移除', 'success');
+        };
+        
+        // 渲染背包物品列表
+        function renderBagItems() {
+            const listEl = document.getElementById('bagItemsList');
+            if (listEl) {
+                if (bagItems.length === 0) {
+                    listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">背包为空</div>';
+                } else {
+                    listEl.innerHTML = bagItems.map(item => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; color: #333;">${item.name}</div>
+                                <div style="font-size: 0.85em; color: #666;">数量：${item.count}</div>
+                            </div>
+                            <button class="btn btn-danger" onclick="removeBagItem(${item.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        </div>
+                    `).join('');
+                }
+            }
+            // 背包物品变化时，更新招募角色功能的招募券数量及主线副本挑战按钮状态
+            renderResourceGameplayList();
+            renderGameplayList();
+        }
+        
+        // 更新英雄选择下拉框（用于添加英雄）
+        function updateHeroSelects() {
+            const addHeroSelect = document.getElementById('addHeroSelect');
+            if (!addHeroSelect) return;
+            
+            addHeroSelect.innerHTML = '<option value="">选择英雄（从英雄表读取）</option>';
+            
+            if (heroTable && heroTable.length > 0) {
+                heroTable.forEach(hero => {
+                    const option = document.createElement('option');
+                    option.value = hero.id;
+                    option.textContent = `${hero.namecn || hero.id} (${hero.id})`;
+                    addHeroSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // 添加玩家英雄
+        window.addPlayerHero = function() {
+            const heroSelect = document.getElementById('addHeroSelect');
+            const levelInput = document.getElementById('addHeroLevel');
+            
+            if (!heroSelect || !levelInput) return;
+            
+            const heroId = heroSelect.value.trim();
+            const level = parseInt(levelInput.value) || 1;
+            
+            if (!heroId) {
+                showMessage('请选择英雄', 'error');
+                return;
+            }
+            
+            // 检查是否已拥有
+            const existing = playerHeroes.find(h => h.heroId === heroId);
+            if (existing) {
+                existing.level = level;
+                showMessage(`英雄${heroId}的等级已更新为${level}级`, 'success');
+            } else {
+                playerHeroes.push({ heroId: heroId, level: level });
+                showMessage(`英雄${heroId}已添加，等级${level}级`, 'success');
+            }
+            
+            heroSelect.value = '';
+            levelInput.value = '1';
+            
+            renderPlayerHeroes();
+            savePlayerEconomyData();
+        };
+        
+        // 移除玩家英雄
+        window.removePlayerHero = function(heroId) {
+            playerHeroes = playerHeroes.filter(h => h.heroId !== heroId);
+            renderPlayerHeroes();
+            savePlayerEconomyData();
+            showMessage('英雄已移除', 'success');
+        };
+        
+        // 更新玩家英雄等级
+        window.updatePlayerHeroLevel = function(heroId, newLevel) {
+            const hero = playerHeroes.find(h => h.heroId === heroId);
+            if (hero) {
+                hero.level = parseInt(newLevel) || 1;
+                renderPlayerHeroes();
+                savePlayerEconomyData();
+            }
+        };
+        
+        // 渲染玩家英雄列表
+        function renderPlayerHeroes() {
+            const listEl = document.getElementById('playerHeroesList');
+            if (!listEl) return;
+            
+            if (playerHeroes.length === 0) {
+                listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无英雄</div>';
+                return;
+            }
+            
+            listEl.innerHTML = playerHeroes.map(heroData => {
+                const hero = heroTable.find(h => h.id === heroData.heroId);
+                const heroName = hero ? hero.namecn : heroData.heroId;
+                const heroLevel = heroData.level || 1;
+                
+                // 获取该等级的属性
+                let attrs = {};
+                if (hero && hero.levels && hero.levels[heroLevel]) {
+                    attrs = hero.levels[heroLevel];
+                }
+                
+                // 根据品质设置颜色（1=白，2=绿，3=蓝，4=紫，5=橙，6=红）
+                const qualityColors = {
+                    1: { border: '#d0d0d0', bg: '#f5f5f5', text: '#666' }, // 白色
+                    2: { border: '#51cf66', bg: '#f0f9f4', text: '#2b8a3e' }, // 绿色
+                    3: { border: '#339af0', bg: '#e7f5ff', text: '#1864ab' }, // 蓝色
+                    4: { border: '#845ef7', bg: '#f3f0ff', text: '#5f3dc4' }, // 紫色
+                    5: { border: '#ff922b', bg: '#fff4e6', text: '#d9480f' }, // 橙色
+                    6: { border: '#ff6b6b', bg: '#ffe3e3', text: '#c92a2a' }  // 红色
+                };
+                const qualityNames = { 1: '白', 2: '绿', 3: '蓝', 4: '紫', 5: '橙', 6: '红' };
+                const heroQuality = hero ? (parseInt(hero.quality) || 1) : 1;
+                const colors = qualityColors[heroQuality] || qualityColors[1];
+                const qualityName = qualityNames[heroQuality] || '白';
+                
+                return `
+                    <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 8px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 600; color: ${colors.text}; font-size: 1em;">${heroName} <span style="font-size: 0.75em; color: ${colors.border};">[${qualityName}]</span></div>
+                            <button class="btn btn-danger" onclick="removePlayerHero('${heroData.heroId}')" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        </div>
+                        <div style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+                            <div>英雄ID：${heroData.heroId}</div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                                <span>等级：</span>
+                                <span style="font-weight: 600; color: ${colors.text};">${heroLevel}</span>
+                                ${heroLevel < 30 ? `<span style="color: #999; font-size: 0.85em;">/ 30</span>` : '<span style="color: #51cf66; font-size: 0.85em;">(满级)</span>'}
+                            </div>
+                            <div style="margin-top: 8px; padding: 8px; background: #f0f0f0; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-size: 0.85em;">升级进度：</span>
+                                    <span style="font-weight: 600; color: #667eea;">${heroData.copies || 0}</span>
+                                </div>
+                                ${heroLevel < 30 ? (() => {
+                                    const copiesNeeded = getCopiesNeededForLevel(heroLevel + 1);
+                                    const copies = heroData.copies || 0;
+                                    const pct = copiesNeeded > 0 ? Math.min(100, Math.floor((copies / copiesNeeded) * 100)) : 0;
+                                    const canUpgrade = copies >= copiesNeeded;
+                                    return `
+                                        <div style="margin-bottom: 6px;">
+                                            <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
+                                                升级到 ${heroLevel + 1} 级需要：<span style="font-weight: 600;">${copiesNeeded}</span> 个本体
+                                            </div>
+                                            <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                                                <div style="height: 100%; width: ${pct}%; background: ${canUpgrade ? 'linear-gradient(90deg, #51cf66, #40c057)' : 'linear-gradient(90deg, #667eea, #764ba2)'}; transition: width 0.3s;"></div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" onclick="upgradePlayerHero('${heroData.heroId}')" 
+                                            style="width: 100%; padding: 6px; font-size: 0.85em; ${canUpgrade ? '' : 'opacity: 0.5; cursor: not-allowed;'}" 
+                                            ${canUpgrade ? '' : 'disabled'}>
+                                            ${canUpgrade ? `升级到 ${heroLevel + 1} 级` : '升级进度不足'}
+                                        </button>
+                                    `;
+                                })() : '<div style="font-size: 0.8em; color: #51cf66;">已达到最高等级</div>'}
+                            </div>
+                            ${attrs.baseAttack || attrs.baseDefense || attrs.baseHp ? `
+                            <div style="margin-top: 8px; padding: 8px; background: #f8f9ff; border-radius: 4px; font-size: 0.85em;">
+                                ${attrs.baseAttack ? `<div>攻击：${attrs.baseAttack}</div>` : ''}
+                                ${attrs.baseDefense ? `<div>防御：${attrs.baseDefense}</div>` : ''}
+                                ${attrs.baseHp ? `<div>生命：${attrs.baseHp}</div>` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 更新装备选择下拉框
+        function updateEquipmentSelect() {
+            const addEquipmentSelect = document.getElementById('addEquipmentSelect');
+            if (!addEquipmentSelect) return;
+            
+            addEquipmentSelect.innerHTML = '<option value="">选择装备（从装备表读取）</option>';
+            
+            if (equipmentTable && equipmentTable.length > 0) {
+                equipmentTable.forEach(eq => {
+                    const option = document.createElement('option');
+                    option.value = eq.id;
+                    option.textContent = `${eq.namecn || eq.id} (${eq.id})`;
+                    addEquipmentSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // 添加玩家装备
+        window.addPlayerEquipment = function() {
+            const equipmentSelect = document.getElementById('addEquipmentSelect');
+            
+            if (!equipmentSelect) return;
+            
+            const equipmentId = equipmentSelect.value.trim();
+            
+            if (!equipmentId) {
+                showMessage('请选择装备', 'error');
+                return;
+            }
+            
+            // 检查是否已拥有（统一转换为字符串进行比较）
+            const equipmentIdStr = String(equipmentId);
+            if (playerEquipment.includes(equipmentIdStr)) {
+                showMessage('该装备已拥有', 'info');
+                return;
+            }
+            
+            playerEquipment.push(equipmentIdStr);
+            equipmentSelect.value = '';
+            
+            renderPlayerOwnedEquipment();
+            savePlayerEconomyData();
+            showMessage(`装备${equipmentId}已添加`, 'success');
+        };
+        
+        // 移除玩家装备
+        window.removePlayerEquipment = function(equipmentId) {
+            // 统一转换为字符串进行比较
+            const equipmentIdStr = String(equipmentId);
+            playerEquipment = playerEquipment.filter(id => String(id) !== equipmentIdStr);
+            renderPlayerOwnedEquipment();
+            savePlayerEconomyData();
+            showMessage('装备已移除', 'success');
+        };
+        
+        // 渲染玩家已拥有装备面板（只显示已拥有的装备）
+        function renderPlayerOwnedEquipment() {
+            const panelEl = document.getElementById('playerOwnedEquipmentPanel');
+            if (!panelEl) {
+                console.error('playerOwnedEquipmentPanel 元素不存在');
+                return;
+            }
+            
+            console.log('renderPlayerOwnedEquipment - playerEquipment:', playerEquipment);
+            console.log('renderPlayerOwnedEquipment - equipmentTable length:', equipmentTable ? equipmentTable.length : 0);
+            
+            if (!equipmentTable || equipmentTable.length === 0) {
+                panelEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">请先上传装备表</div>';
+                return;
+            }
+            
+            if (playerEquipment.length === 0) {
+                panelEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无已拥有装备</div>';
+                return;
+            }
+            
+            // 按职业分组显示已拥有的装备
+            const jobNames = { 1: '坦克', 2: '战士', 3: '射手', 4: '辅助' };
+            const typeNames = { 'head': '头', 'body': '身', 'hand': '手', 'foot': '脚' };
+            
+            let html = '';
+            let totalOwnedCount = 0;
+            
+            // 确保 playerEquipment 数组中的所有ID都是字符串格式
+            const playerEquipmentStr = playerEquipment.map(id => String(id));
+            console.log('renderPlayerOwnedEquipment - playerEquipmentStr:', playerEquipmentStr);
+            
+            // 先找出所有已拥有的装备（不按职业过滤）
+            const allOwnedEquipments = equipmentTable.filter(eq => {
+                const eqIdStr = String(eq.id);
+                return playerEquipmentStr.includes(eqIdStr);
+            });
+            
+            console.log('renderPlayerOwnedEquipment - 所有已拥有装备数量:', allOwnedEquipments.length);
+            allOwnedEquipments.forEach(eq => {
+                const parsedJob = parseInt(eq.heroclass) || 0;
+                console.log(`已拥有装备: ID=${eq.id}, 职业原始值=${eq.heroclass} (类型: ${typeof eq.heroclass}), 解析后=${parsedJob}, 类型=${eq.type}, 名称=${eq.namecn || eq.id}`);
+            });
+            
+            // 辅助函数：从装备名称推断职业（1=坦克，2=战士，3=射手，4=辅助）
+            function inferJobFromName(name) {
+                if (!name) return 0;
+                const nameStr = String(name).trim();
+                if (nameStr.includes('坦克')) return 1;
+                if (nameStr.includes('战士')) return 2;
+                if (nameStr.includes('射手')) return 3;
+                if (nameStr.includes('辅助')) return 4;
+                return 0;
+            }
+            
+            // 按职业分组
+            for (let job = 1; job <= 4; job++) {
+                // 获取该职业已拥有的装备
+                // 统一转换为数字类型进行比较，避免类型不匹配
+                const ownedEquipments = allOwnedEquipments.filter(eq => {
+                    // 首先尝试从 heroclass 字段解析
+                    let eqJob = parseInt(eq.heroclass) || 0;
+                    
+                    // 如果解析失败或为0，尝试从装备名称推断
+                    if (eqJob === 0 && eq.namecn) {
+                        eqJob = inferJobFromName(eq.namecn);
+                    }
+                    
+                    // 如果还是0，尝试从装备ID推断（ID格式如：13111001，第3位可能是职业）
+                    if (eqJob === 0 && eq.id) {
+                        const idStr = String(eq.id).trim();
+                        if (idStr.length >= 3) {
+                            const thirdChar = parseInt(idStr[2]);
+                            if (thirdChar >= 1 && thirdChar <= 4) {
+                                eqJob = thirdChar;
+                            }
+                        }
+                    }
+                    
+                    const matches = eqJob === job;
+                    if (matches) {
+                        console.log(`职业 ${job} 匹配装备: ID=${eq.id}, heroclass=${eq.heroclass} (解析为${eqJob}), 名称=${eq.namecn || eq.id}`);
+                    }
+                    return matches;
+                });
+                
+                totalOwnedCount += ownedEquipments.length;
+                console.log(`职业 ${job} (${jobNames[job]}) 已拥有装备数量: ${ownedEquipments.length}`);
+                
+                if (ownedEquipments.length === 0) continue;
+                
+                html += `
+                    <div style="background: white; border: 2px solid #51cf66; border-radius: 8px; padding: 15px;">
+                        <div style="font-weight: 600; color: #667eea; font-size: 1.1em; margin-bottom: 15px;">${jobNames[job] || '未知职业'}</div>
+                `;
+                
+                // 按部位分组
+                const types = ['head', 'body', 'hand', 'foot'];
+                const typeMapping = {
+                    'head': ['head', '头', '头部', '头盔'],
+                    'body': ['body', '身', '身体', '胸甲', '护甲'],
+                    'hand': ['hand', '手', '手部', '武器'],
+                    'foot': ['foot', '脚', '脚部', '鞋子', '靴子']
+                };
+                
+                types.forEach(type => {
+                    // 统一转换为字符串进行比较，兼容多种部位名称格式
+                    const typeEquipments = ownedEquipments.filter(eq => {
+                        const eqType = String(eq.type || '').trim().toLowerCase();
+                        const validTypes = typeMapping[type];
+                        const matches = validTypes.some(validType => eqType === validType.toLowerCase());
+                        
+                        if (matches) {
+                            console.log(`部位 ${type} 匹配装备: ID=${eq.id}, type=${eq.type}, 名称=${eq.namecn || eq.id}`);
+                        }
+                        return matches;
+                    });
+                    
+                    console.log(`职业 ${job} (${jobNames[job]}) 部位 ${type} 已拥有装备数量: ${typeEquipments.length}`);
+                    
+                    if (typeEquipments.length === 0) return;
+                    
+                    html += `
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 0.95em;">${typeNames[type] || type}部</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;">
+                    `;
+                    
+                    typeEquipments.forEach(eq => {
+                        // 根据品质设置颜色（1=白，2=绿，3=蓝，4=紫，5=橙，6=红）
+                        const qualityColors = {
+                            1: { border: '#d0d0d0', bg: '#f5f5f5', text: '#666' }, // 白色
+                            2: { border: '#51cf66', bg: '#f0f9f4', text: '#2b8a3e' }, // 绿色
+                            3: { border: '#339af0', bg: '#e7f5ff', text: '#1864ab' }, // 蓝色
+                            4: { border: '#845ef7', bg: '#f3f0ff', text: '#5f3dc4' }, // 紫色
+                            5: { border: '#ff922b', bg: '#fff4e6', text: '#d9480f' }, // 橙色
+                            6: { border: '#ff6b6b', bg: '#ffe3e3', text: '#c92a2a' }  // 红色
+                        };
+                        const qualityNames = { 1: '白', 2: '绿', 3: '蓝', 4: '紫', 5: '橙', 6: '红' };
+                        const eqQuality = parseInt(eq.quality) || 1;
+                        const colors = qualityColors[eqQuality] || qualityColors[1];
+                        const qualityName = qualityNames[eqQuality] || '白';
+                        
+                        html += `
+                            <div style="padding: 10px; border: 2px solid ${colors.border}; border-radius: 6px; background: ${colors.bg}; position: relative;">
+                                <div style="font-size: 0.9em; font-weight: 600; color: ${colors.text}; margin-bottom: 4px;">${eq.namecn || eq.id} <span style="font-size: 0.75em; color: ${colors.border};">[${qualityName}]</span></div>
+                                <div style="font-size: 0.75em; color: #666; margin-bottom: 4px;">${eq.id}</div>
+                                ${eq.hp || eq.atk || eq.def ? `
+                                <div style="font-size: 0.7em; color: #888; margin-top: 4px;">
+                                    ${eq.hp ? `HP:${eq.hp} ` : ''}
+                                    ${eq.atk ? `ATK:${eq.atk} ` : ''}
+                                    ${eq.def ? `DEF:${eq.def}` : ''}
+                                </div>
+                                ` : ''}
+                                <button class="btn btn-danger" onclick="removePlayerEquipment('${eq.id}')" style="position: absolute; top: 4px; right: 4px; padding: 2px 6px; font-size: 0.7em; background: #ff6b6b;">×</button>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
+            
+            console.log('renderPlayerOwnedEquipment - totalOwnedCount:', totalOwnedCount);
+            console.log('renderPlayerOwnedEquipment - html length:', html.length);
+            
+            if (!html) {
+                html = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无已拥有装备</div>';
+            }
+            
+            panelEl.innerHTML = html;
+            console.log('renderPlayerOwnedEquipment - 渲染完成，panelEl.innerHTML length:', panelEl.innerHTML.length);
+            
+            // 强制显示，确保容器可见
+            panelEl.style.display = 'grid';
+            panelEl.style.minHeight = '100px';
+            panelEl.style.visibility = 'visible';
+        }
+        
+        // 监听资源输入变化
+        function setupEconomyInputListeners() {
+            const staminaInput = document.getElementById('playerStamina');
+            const currentStaminaInput = document.getElementById('playerCurrentStamina');
+            const goldInput = document.getElementById('playerGold');
+            const diamondInput = document.getElementById('playerDiamond');
+            const levelInput = document.getElementById('playerLevel');
+            const expInput = document.getElementById('playerExp');
+            const expRequiredInput = document.getElementById('playerExpRequired');
+            const dailyGoldInput = document.getElementById('playerDailyGold');
+            const dailyDiamondInput = document.getElementById('playerDailyDiamond');
+            const dailyRecruitInput = document.getElementById('playerDailyRecruitTickets');
+            
+            if (staminaInput) {
+                staminaInput.addEventListener('change', function() {
+                    playerResources.stamina = parseInt(this.value) || 100;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (currentStaminaInput) {
+                currentStaminaInput.addEventListener('change', function() {
+                    playerResources.currentStamina = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (goldInput) {
+                goldInput.addEventListener('change', function() {
+                    playerResources.gold = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (diamondInput) {
+                diamondInput.addEventListener('change', function() {
+                    playerResources.diamond = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (dailyGoldInput) {
+                dailyGoldInput.addEventListener('change', function() {
+                    playerResources.dailyGold = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            if (dailyDiamondInput) {
+                dailyDiamondInput.addEventListener('change', function() {
+                    playerResources.dailyDiamond = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            if (dailyRecruitInput) {
+                dailyRecruitInput.addEventListener('change', function() {
+                    playerResources.dailyRecruitTickets = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (levelInput) {
+                levelInput.addEventListener('change', function() {
+                    playerAccount.level = parseInt(this.value) || 1;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (expInput) {
+                expInput.addEventListener('change', function() {
+                    playerAccount.exp = parseInt(this.value) || 0;
+                    savePlayerEconomyData();
+                });
+            }
+            
+            if (expRequiredInput) {
+                expRequiredInput.addEventListener('change', function() {
+                    playerAccount.expRequired = parseInt(this.value) || 100;
+                    savePlayerEconomyData();
+                });
+            }
+        }
 
         // 方案管理
         const STORAGE_KEY = 'battleSimulatorSchemes';
@@ -7045,6 +9470,69 @@
         const BATTLE_WAVE_STORAGE_KEY = 'battleSimulatorBattleWaveSchemes';
         const MAX_BATTLE_WAVE_SCHEMES = 8;
         let currentBattleWaveSchemeId = null;
+        
+        // 主配置关联玩家经济模拟
+        let useEconomySimulation = false;
+        let mainConfigEconomySchemeId = null;
+        
+        function loadEconomySchemesForMain() {
+            try {
+                const raw = localStorage.getItem('battleSimulatorEconomySchemes');
+                if (!raw) return [];
+                const list = JSON.parse(raw);
+                return Array.isArray(list) ? list : [];
+            } catch (e) { return []; }
+        }
+        
+        function getMainConfigEconomySchemeData() {
+            if (!useEconomySimulation || !mainConfigEconomySchemeId) return null;
+            const schemes = loadEconomySchemesForMain();
+            const s = schemes.find(x => x.id === mainConfigEconomySchemeId);
+            return s ? { playerHeroes: s.playerHeroes || [], playerEquipment: (s.playerEquipment || []).map(x => String(x)) } : null;
+        }
+        
+        function updateMainConfigEconomySchemeSelect() {
+            const wrap = document.getElementById('mainConfigEconomySchemeWrap');
+            const sel = document.getElementById('mainConfigEconomySchemeSelect');
+            const hint = document.getElementById('mainConfigEconomyHint');
+            if (!sel) return;
+            const schemes = loadEconomySchemesForMain();
+            sel.innerHTML = '<option value="">选择方案...</option>';
+            schemes.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                if (s.id === mainConfigEconomySchemeId) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (wrap) wrap.style.display = useEconomySimulation ? 'flex' : 'none';
+            if (hint) hint.style.display = useEconomySimulation ? 'block' : 'none';
+        }
+        
+        window.toggleUseEconomySimulation = function() {
+            const cb = document.getElementById('useEconomySimulationCheckbox');
+            useEconomySimulation = !!(cb && cb.checked);
+            if (!useEconomySimulation) mainConfigEconomySchemeId = null;
+            updateMainConfigEconomySchemeSelect();
+            updateAllCharacterHeroSelects();
+            characters.forEach(c => updateCharacterHeroLevelSelect(c.id));
+            updateJobEquipmentPanel();
+        };
+        
+        window.onMainConfigEconomySchemeChange = function() {
+            const sel = document.getElementById('mainConfigEconomySchemeSelect');
+            mainConfigEconomySchemeId = (sel && sel.value) || null;
+            updateAllCharacterHeroSelects();
+            characters.forEach(c => updateCharacterHeroLevelSelect(c.id));
+            updateJobEquipmentPanel();
+        };
+        
+        // 同步主配置经济关联 UI（勾选、下拉）与全局状态
+        function syncMainConfigEconomyUI() {
+            const cb = document.getElementById('useEconomySimulationCheckbox');
+            if (cb) cb.checked = useEconomySimulation;
+            updateMainConfigEconomySchemeSelect();
+        }
         
         // 共享存储配置
         const SHARED_GIST_ID_KEY = 'battleSimulatorSharedGistId';
@@ -7455,6 +9943,9 @@
             stageConfig: JSON.parse(JSON.stringify(stageConfig)),
             // 保存当前选择的25波怪物数据方案ID
             battleWaveSchemeId: currentBattleWaveSchemeId || null,
+            // 主配置关联玩家经济模拟
+            useEconomySimulation: useEconomySimulation,
+            economySchemeId: mainConfigEconomySchemeId || null,
             
             // 从界面读取最新的20波怪物数据输入配置
             // 确保保存时读取界面上的最新值
@@ -7721,6 +10212,11 @@
                 initStageConfig();
             }
 
+            // 主配置关联玩家经济模拟
+            useEconomySimulation = !!(scheme.useEconomySimulation);
+            mainConfigEconomySchemeId = scheme.economySchemeId || null;
+            syncMainConfigEconomyUI();
+            
             // 加载20波怪物数据输入配置（根据方案ID加载）
             if (scheme.battleWaveSchemeId) {
                 currentBattleWaveSchemeId = scheme.battleWaveSchemeId;
@@ -7803,6 +10299,9 @@
         window.newScheme = function() {
             currentSchemeId = null;
             document.getElementById('schemeNameInput').value = '';
+            useEconomySimulation = false;
+            mainConfigEconomySchemeId = null;
+            syncMainConfigEconomyUI();
             resetConfig();
             renderSchemeList();
             showMessage('已创建新方案，请配置后保存', 'info');
@@ -7812,6 +10311,9 @@
         window.clearCurrentScheme = function() {
             currentSchemeId = null;
             document.getElementById('schemeNameInput').value = '';
+            useEconomySimulation = false;
+            mainConfigEconomySchemeId = null;
+            syncMainConfigEconomyUI();
             resetConfig();
             renderSchemeList();
         };
@@ -8008,6 +10510,11 @@
                             hero.levels = {};
                         }
                         
+                        // 确保品质字段存在，默认为1（白色）
+                        if (!hero.quality) {
+                            hero.quality = 1;
+                        }
+                        
                         // 确保基础属性存在（如果没有levels数据，使用保存的基础属性）
                         if (!hero.baseAttack && hero.levels[1]) {
                             hero.baseAttack = hero.levels[1].baseAttack || 0;
@@ -8108,7 +10615,8 @@
                         return {
                             ...eq,
                             heroclass: heroclass,
-                            type: String(eq.type || '').trim()
+                            type: String(eq.type || '').trim(),
+                            quality: parseInt(eq.quality) || 1 // 确保品质字段存在，默认为1（白色）
                         };
                     });
                     
@@ -8161,6 +10669,9 @@
                 mainTab.appendChild(mainContent);
             }
             
+            // 设置玩家经济模拟输入监听器
+            setupEconomyInputListeners();
+            
             // 初始化角色界面
             initCharacters();
             
@@ -8170,15 +10681,12 @@
             loadSavedHeroTable();
             loadSavedMonsterTable();
             loadSavedUpgradeTable();
-            
+            loadSavedRecruitInfoTable();
+            loadSavedAccountLevelTable();
+
             // 如果配置了共享存储，自动尝试同步（静默，不显示错误）
             if (sharedGistId) {
                 updateSharedStorageStatus('已配置，点击同步按钮加载共享数据');
-                // 可选：自动同步（取消注释下面的代码）
-                // syncFromShared().catch(() => {
-                //     // 静默失败，使用本地数据
-                //     console.log('自动同步失败，使用本地数据');
-                // });
             } else {
                 updateSharedStorageStatus('未配置共享存储');
             }
@@ -8211,6 +10719,8 @@
             
             // 渲染方案列表
             renderSchemeList();
+            
+            syncMainConfigEconomyUI();
 
             // 尝试加载上次使用的方案
             const lastSchemeId = localStorage.getItem('battleSimulatorLastScheme');
