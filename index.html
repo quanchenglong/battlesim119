@@ -1216,6 +1216,18 @@
                 </div>
 
                 <div class="scheme-manager">
+                    <div class="section-title">📦 物品总表管理</div>
+                    <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="itemTableFileInput" accept=".xlsx,.xls" style="display: none;" onchange="loadItemTable(event)" />
+                            <button class="btn btn-primary" onclick="document.getElementById('itemTableFileInput').click()" style="padding: 8px 20px;">上传物品总表</button>
+                            <span id="itemTableStatus" style="color: #666; font-size: 0.9em;">未加载物品总表</span>
+                        </div>
+                        <div id="itemTableInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="scheme-manager">
                     <div class="section-title">⚔️ 局内武器技能升级表管理</div>
                     <div style="background: #f8f9ff; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -1425,8 +1437,10 @@
                             </div>
                             <div>
                                 <div class="section-title" style="font-size: 1em; margin-bottom: 15px;">背包物品</div>
-                                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                    <input type="text" id="newItemName" placeholder="物品名称" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1;" />
+                                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                                    <select id="newItemResourceSelect" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; flex: 1; min-width: 200px;">
+                                        <option value="">请选择资源（需先上传物品总表）</option>
+                                    </select>
                                     <input type="number" id="newItemCount" placeholder="数量" min="1" value="1" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9em; width: 100px;" />
                                     <button class="btn btn-primary" onclick="addItemToBag()" style="padding: 8px 16px; font-size: 0.9em;">➕ 添加</button>
                                 </div>
@@ -1643,6 +1657,18 @@
         </div>
 
         <div class="config-section">
+            <div class="section-title">⚡ 装备强化配置</div>
+            <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                    手动配置各个职业各个部位的强化等级（用于主配置计算，不影响经济模拟数据）
+                </div>
+                <div id="mainConfigEquipSlotEnhancePanel" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                    <!-- 装备强化面板将动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="config-section">
             <div class="section-title">📊 角色最终属性（用于战斗计算）</div>
             <div id="finalAttributesPanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px;"></div>
         </div>
@@ -1746,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.2';
+        const VERSION = '2.4.3';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -1769,11 +1795,37 @@
         let equipmentTable = [];
         const EQUIPMENT_STORAGE_KEY = 'battleSimulatorEquipmentTable';
         
+        // 装备槽位强化表数据（从EquipSlotLevel页签读取）
+        let equipSlotLevelTable = []; // [{type, heroClasses, slotLevel, costItem, attribute}, ...]
+        const EQUIP_SLOT_LEVEL_STORAGE_KEY = 'battleSimulatorEquipSlotLevelTable';
+        
+        // 玩家装备槽位强化等级数据 {jobId: {type: level}, ...}
+        // jobId: 1=坦克, 2=战士, 3=射手, 4=辅助
+        // type: '头'=1, '身'=2, '手'=3, '脚'=4
+        let equipSlotLevels = {
+            1: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            2: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            3: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            4: { '头': 0, '身': 0, '手': 0, '脚': 0 }
+        };
+        
+        // 主配置页签的装备强化等级数据（独立于经济模拟数据）
+        let mainConfigEquipSlotLevels = {
+            1: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            2: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            3: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+            4: { '头': 0, '身': 0, '手': 0, '脚': 0 }
+        };
+        
         // 英雄表数据
         let heroTable = [];
         let monsterTable = []; // 怪物表数据
         const HERO_STORAGE_KEY = 'battleSimulatorHeroTable';
         const MONSTER_STORAGE_KEY = 'battleSimulatorMonsterTable';
+        
+        // 资源类物品表数据（从item_10页签读取）
+        let resourceItemTable = []; // [{id, name}, ...]
+        const RESOURCE_ITEM_STORAGE_KEY = 'battleSimulatorResourceItemTable';
         
         // 招募角色信息表数据
         let recruitInfoTable = [];
@@ -3059,14 +3111,113 @@
                         def: eq.def
                     })));
 
+                    // 读取EquipSlotLevel页签
+                    try {
+                        const slotLevelSheetName = workbook.SheetNames.find(name => 
+                            name.toLowerCase().includes('equipslotlevel') || name.toLowerCase().includes('equip_slot_level')
+                        );
+                        if (slotLevelSheetName) {
+                            const slotLevelSheet = workbook.Sheets[slotLevelSheetName];
+                            const slotLevelRows = XLSX.utils.sheet_to_json(slotLevelSheet, { header: 1 });
+                            
+                            if (slotLevelRows && slotLevelRows.length >= 6) {
+                                const headerRow0 = slotLevelRows[0] || [];
+                                let colType = -1, colHeroClasses = -1, colSlotLevel = -1, colCostItem = -1, colAttribute = -1;
+                                
+                                for (let i = 0; i < headerRow0.length; i++) {
+                                    const cell = String(headerRow0[i] || '').trim().toLowerCase();
+                                    if (cell === 'type' || cell === '部位') colType = i;
+                                    else if (cell === 'heroclasses' || cell === 'hero_classes' || cell === '职业') colHeroClasses = i;
+                                    else if (cell === 'slotlevel' || cell === 'slot_level' || cell === '槽位等级') colSlotLevel = i;
+                                    else if (cell === 'costitem' || cell === 'cost_item' || cell === '消耗材料') colCostItem = i;
+                                    else if (cell === 'attribute' || cell === '属性') colAttribute = i;
+                                }
+                                
+                                if (colType >= 0 && colHeroClasses >= 0 && colSlotLevel >= 0 && colCostItem >= 0 && colAttribute >= 0) {
+                                    const dataRows = slotLevelRows.slice(5);
+                                    equipSlotLevelTable = dataRows.map(row => {
+                                        const type = parseInt(row[colType]) || 0;
+                                        const heroClasses = parseInt(row[colHeroClasses]) || 0;
+                                        const slotLevel = parseInt(row[colSlotLevel]) || 0;
+                                        const costItem = String(row[colCostItem] || '').trim();
+                                        const attribute = String(row[colAttribute] || '').trim();
+                                        
+                                        // 解析costItem: "1011;5|1001;20" -> [{resourceId: '1011', count: 5}, {resourceId: '1001', count: 20}]
+                                        const costItems = [];
+                                        if (costItem) {
+                                            costItem.split('|').forEach(part => {
+                                                const [resourceId, count] = part.split(';');
+                                                if (resourceId && count) {
+                                                    costItems.push({
+                                                        resourceId: resourceId.trim(),
+                                                        count: parseInt(count.trim()) || 0
+                                                    });
+                                                }
+                                            });
+                                        }
+                                        
+                                        // 解析attribute: "101001;140|103001;6|" -> {hp: 140, def: 6}
+                                        const attrs = { hp: 0, atk: 0, def: 0 };
+                                        if (attribute) {
+                                            attribute.split('|').forEach(part => {
+                                                if (!part.trim()) return;
+                                                const [attrId, value] = part.split(';');
+                                                if (attrId && value) {
+                                                    const attrIdNum = parseInt(attrId.trim());
+                                                    const attrValue = parseInt(value.trim()) || 0;
+                                                    if (attrIdNum === 101001) attrs.hp = attrValue;
+                                                    else if (attrIdNum === 102001) attrs.atk = attrValue;
+                                                    else if (attrIdNum === 103001) attrs.def = attrValue;
+                                                }
+                                            });
+                                        }
+                                        
+                                        return {
+                                            type: type, // 1=头, 2=身, 3=手, 4=脚
+                                            heroClasses: heroClasses, // 1=坦克, 2=战士, 3=射手, 4=辅助
+                                            slotLevel: slotLevel,
+                                            costItems: costItems,
+                                            attribute: attrs
+                                        };
+                                    }).filter(row => row.type > 0 && row.heroClasses > 0 && row.slotLevel > 0);
+                                    
+                                    localStorage.setItem(EQUIP_SLOT_LEVEL_STORAGE_KEY, JSON.stringify(equipSlotLevelTable));
+                                    console.log('装备槽位强化表已保存到本地，共', equipSlotLevelTable.length, '条记录');
+                                    
+                                    // 检查是否有装备槽位强化玩法，如果没有则添加
+                                    const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+                                    if (!hasEquipSlotEnhance) {
+                                        const maxId = resourceConsumptionGameplayList.length > 0 
+                                            ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                                            : 0;
+                                        resourceConsumptionGameplayList.push({
+                                            id: maxId + 1,
+                                            name: '装备槽位强化',
+                                            itemName: '',
+                                            type: 'equipSlotEnhance'
+                                        });
+                                        savePlayerEconomyData();
+                                        console.log('已自动添加装备槽位强化玩法');
+                                    }
+                                } else {
+                                    console.warn('EquipSlotLevel页签缺少必要的列');
+                                }
+                            }
+                        }
+                    } catch (slotError) {
+                        console.warn('读取EquipSlotLevel页签失败:', slotError);
+                    }
+                    
                     // 更新界面
                     updateJobEquipmentPanel();
                     updateEquipmentTableInfo();
+                    renderMainConfigEquipSlotEnhancePanel(); // 刷新主配置装备强化面板 // 刷新主配置装备强化面板
                     // 如果玩家经济模拟页签已打开，更新装备选择下拉框和装备面板
                     const economyTab = document.getElementById('tab-economy');
                     if (economyTab && economyTab.classList.contains('active')) {
                         updateEquipmentSelect();
                         renderPlayerOwnedEquipment();
+                        renderResourceGameplayList(); // 刷新资源消耗玩法列表，显示装备槽位强化
                     }
                     
                     showMessage(`成功加载${equipmentTable.length}件装备，已保存到本地`, 'success');
@@ -3234,6 +3385,245 @@
             } catch (err) {
                 console.error('加载玩家账号等级表失败', err);
             }
+        }
+
+        // 加载物品总表（全局函数）
+        window.loadItemTable = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 查找item_10页签
+                    const item10SheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase() === 'item_10' || name.toLowerCase().includes('item_10')
+                    );
+                    
+                    if (!item10SheetName) {
+                        showMessage('未找到item_10页签', 'error');
+                        return;
+                    }
+                    
+                    // 读取item_10页签（头5行是表头）
+                    const item10Sheet = workbook.Sheets[item10SheetName];
+                    const rawRows = XLSX.utils.sheet_to_json(item10Sheet, { 
+                        header: 1,
+                        defval: ''
+                    });
+                    
+                    // 跳过前5行表头，从第6行开始读取数据
+                    const dataRows = rawRows.slice(5);
+                    
+                    // 查找id和name列的索引（从第一行表头查找）
+                    const headerRow0 = rawRows[0] || [];
+                    let colId = -1;
+                    let colName = -1;
+                    
+                    for (let i = 0; i < headerRow0.length; i++) {
+                        const cellValue = String(headerRow0[i] || '').toLowerCase().trim();
+                        if (cellValue === 'id') {
+                            colId = i;
+                        } else if (cellValue === 'name') {
+                            colName = i;
+                        }
+                    }
+                    
+                    if (colId < 0 || colName < 0) {
+                        showMessage('未找到id列或name列', 'error');
+                        return;
+                    }
+                    
+                    resourceItemTable = [];
+                    dataRows.forEach((row, index) => {
+                        if (!row || row.length === 0) return;
+                        
+                        const id = String(row[colId] || '').trim();
+                        const name = String(row[colName] || '').trim();
+                        
+                        if (id && name) {
+                            resourceItemTable.push({ id, name });
+                        }
+                    });
+                    
+                    // 保存到localStorage
+                    try {
+                        localStorage.setItem(RESOURCE_ITEM_STORAGE_KEY, JSON.stringify(resourceItemTable));
+                    } catch (err) {
+                        console.error('保存资源物品表失败', err);
+                    }
+                    
+                    const status = document.getElementById('itemTableStatus');
+                    const info = document.getElementById('itemTableInfo');
+                    if (status) {
+                        status.textContent = `已加载资源物品表 ${resourceItemTable.length} 条`;
+                        status.style.color = '#51cf66';
+                    }
+                    if (info) {
+                        info.textContent = `共 ${resourceItemTable.length} 条资源类物品`;
+                    }
+                    
+                    // 更新资源选择下拉框
+                    updateResourceSelect();
+                    
+                    showMessage('物品总表加载成功', 'success');
+                } catch (err) {
+                    console.error('加载物品总表失败', err);
+                    showMessage('加载物品总表失败：' + (err.message || err), 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // 从本地加载已保存的资源物品表
+        function loadSavedResourceItemTable() {
+            try {
+                const raw = localStorage.getItem(RESOURCE_ITEM_STORAGE_KEY);
+                if (raw) {
+                    resourceItemTable = JSON.parse(raw);
+                    console.log('从本地加载资源物品表，共', resourceItemTable.length, '条');
+                }
+                const status = document.getElementById('itemTableStatus');
+                const info = document.getElementById('itemTableInfo');
+                if (resourceItemTable.length) {
+                    if (status) {
+                        status.textContent = `已加载资源物品表 ${resourceItemTable.length} 条`;
+                        status.style.color = '#51cf66';
+                    }
+                    if (info) {
+                        info.textContent = `共 ${resourceItemTable.length} 条资源类物品`;
+                    }
+                }
+                // 更新资源选择下拉框和资源标签
+                updateResourceSelect();
+                updateResourceLabels();
+            } catch (err) {
+                console.error('加载资源物品表失败', err);
+            }
+        }
+
+        // 根据资源ID获取资源名称
+        function getResourceName(resourceId) {
+            if (!resourceItemTable || resourceItemTable.length === 0) {
+                // 如果资源表未加载，返回默认名称
+                const defaultNames = {
+                    '1001': '金币',
+                    '1002': '钻石',
+                    '1003': '体力',
+                    '1021': '招募券'
+                };
+                return defaultNames[String(resourceId)] || '';
+            }
+            const resource = resourceItemTable.find(r => String(r.id).trim() === String(resourceId).trim());
+            return resource ? resource.name : '';
+        }
+
+        // 获取招募券资源名称（资源ID 1021）
+        function getRecruitTicketName() {
+            return getResourceName('1021');
+        }
+
+        // 更新资源标签显示
+        function updateResourceLabels() {
+            // 更新体力标签
+            const staminaLabel = document.querySelector('label[for="playerCurrentStamina"]');
+            if (!staminaLabel) {
+                // 如果没有for属性，查找包含"体力"的label
+                const labels = document.querySelectorAll('label');
+                labels.forEach(label => {
+                    if (label.textContent.trim() === '体力' && label.nextElementSibling && label.nextElementSibling.id === 'playerCurrentStamina') {
+                        const resourceName = getResourceName('1003');
+                        if (resourceName) label.textContent = resourceName;
+                    }
+                });
+            } else {
+                const resourceName = getResourceName('1003');
+                if (resourceName) staminaLabel.textContent = resourceName;
+            }
+            
+            // 更新金币标签
+            const goldLabel = document.querySelector('label[for="playerGold"]');
+            if (!goldLabel) {
+                const labels = document.querySelectorAll('label');
+                labels.forEach(label => {
+                    if (label.textContent.trim() === '金币' && label.nextElementSibling && label.nextElementSibling.id === 'playerGold') {
+                        const resourceName = getResourceName('1001');
+                        if (resourceName) label.textContent = resourceName;
+                    }
+                });
+            } else {
+                const resourceName = getResourceName('1001');
+                if (resourceName) goldLabel.textContent = resourceName;
+            }
+            
+            // 更新钻石标签
+            const diamondLabel = document.querySelector('label[for="playerDiamond"]');
+            if (!diamondLabel) {
+                const labels = document.querySelectorAll('label');
+                labels.forEach(label => {
+                    if (label.textContent.trim() === '钻石' && label.nextElementSibling && label.nextElementSibling.id === 'playerDiamond') {
+                        const resourceName = getResourceName('1002');
+                        if (resourceName) label.textContent = resourceName;
+                    }
+                });
+            } else {
+                const resourceName = getResourceName('1002');
+                if (resourceName) diamondLabel.textContent = resourceName;
+            }
+            
+            // 更新招募券标签
+            const recruitLabel = document.querySelector('label[for="playerDailyRecruitTickets"]');
+            if (!recruitLabel) {
+                const labels = document.querySelectorAll('label');
+                labels.forEach(label => {
+                    if (label.textContent.trim() === '招募券' && label.nextElementSibling && label.nextElementSibling.id === 'playerDailyRecruitTickets') {
+                        const resourceName = getResourceName('1021');
+                        if (resourceName) label.textContent = resourceName;
+                    }
+                });
+            } else {
+                const resourceName = getResourceName('1021');
+                if (resourceName) recruitLabel.textContent = resourceName;
+            }
+        }
+
+        // 更新资源选择下拉框
+        function updateResourceSelect() {
+            const select = document.getElementById('newItemResourceSelect');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">请选择资源</option>';
+            
+            if (resourceItemTable.length === 0) {
+                select.innerHTML = '<option value="">请先上传物品总表</option>';
+                return;
+            }
+            
+            // 按ID排序
+            const sortedResources = [...resourceItemTable].sort((a, b) => {
+                const idA = String(a.id).trim();
+                const idB = String(b.id).trim();
+                // 尝试数字比较，否则字符串比较
+                const numA = parseInt(idA);
+                const numB = parseInt(idB);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                }
+                return idA.localeCompare(idB);
+            });
+            
+            sortedResources.forEach(resource => {
+                const option = document.createElement('option');
+                option.value = resource.id;
+                option.textContent = `${resource.id} - ${resource.name}`;
+                option.setAttribute('data-name', resource.name);
+                select.appendChild(option);
+            });
+            
+            // 更新资源标签
+            updateResourceLabels();
         }
 
         // 根据账号等级表获取「升到该级别需要的经验」；若表无此级则回退默认
@@ -3637,10 +4027,39 @@
                 }
             });
             
-            // 保存装备加成
+            // 累加装备强化属性加成（使用主配置的强化等级，只取当前等级的属性）
+            const jobId = char.job;
+            const typeMap = { 'head': 1, 'body': 2, 'hand': 3, 'foot': 4 };
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            let enhanceHp = 0, enhanceAtk = 0, enhanceDef = 0;
+            
+            if (mainConfigEquipSlotLevels[jobId] && equipSlotLevelTable && equipSlotLevelTable.length > 0) {
+                ['head', 'body', 'hand', 'foot'].forEach(type => {
+                    const typeId = typeMap[type];
+                    const typeName = typeNames[typeId];
+                    const level = mainConfigEquipSlotLevels[jobId][typeName] || 0;
+                    
+                    if (level > 0) {
+                        // 只取当前等级的属性加成（不累加之前等级）
+                        const levelData = equipSlotLevelTable.find(row => 
+                            row.type === typeId && row.heroClasses === jobId && row.slotLevel === level
+                        );
+                        if (levelData && levelData.attribute) {
+                            enhanceHp += levelData.attribute.hp || 0;
+                            enhanceAtk += levelData.attribute.atk || 0;
+                            enhanceDef += levelData.attribute.def || 0;
+                        }
+                    }
+                });
+            }
+            
+            // 分别保存装备加成和装备强化加成
             char.equipmentHpBonus = totalHp;
             char.equipmentAtkBonus = totalAtk;
             char.equipmentDefBonus = totalDef;
+            char.equipSlotEnhanceHpBonus = enhanceHp;
+            char.equipSlotEnhanceAtkBonus = enhanceAtk;
+            char.equipSlotEnhanceDefBonus = enhanceDef;
             
             // 计算平台属性加成（先同步英雄数量/等级和来源：经济方案或输入框）
             if (typeof ensurePlatformConfigFromSource === 'function') {
@@ -3662,10 +4081,10 @@
             char.vehicleHpBonus = vehicleConfig.hp || 0;
             
             // 应用属性加成（最终属性，用于战斗计算）
-            // 最终属性 = 基础属性 + 装备加成 + 平台加成 + 车辆加成
-            char.attack = (char.baseAttack || 0) + totalAtk + platformAttackBonus + vehicleConfig.attack;
-            char.defense = (char.baseDefense || 0) + totalDef + platformDefenseBonus + vehicleConfig.defense;
-            const hpBonus = totalHp + platformHpBonus + vehicleConfig.hp;
+            // 最终属性 = 基础属性 + 装备加成（含强化） + 平台加成 + 车辆加成
+            char.attack = (char.baseAttack || 0) + totalAtk + enhanceAtk + platformAttackBonus + vehicleConfig.attack;
+            char.defense = (char.baseDefense || 0) + totalDef + enhanceDef + platformDefenseBonus + vehicleConfig.defense;
+            const hpBonus = totalHp + enhanceHp + platformHpBonus + vehicleConfig.hp;
             char.maxHp = (char.baseHp || 0) + hpBonus;
             char.hp = Math.min(char.hp || char.maxHp, char.maxHp); // 调整当前血量不超过最大血量
             
@@ -3784,6 +4203,9 @@
                 const eqHp = char.equipmentHpBonus || 0;
                 const eqAtk = char.equipmentAtkBonus || 0;
                 const eqDef = char.equipmentDefBonus || 0;
+                const enhanceHp = char.equipSlotEnhanceHpBonus || 0;
+                const enhanceAtk = char.equipSlotEnhanceAtkBonus || 0;
+                const enhanceDef = char.equipSlotEnhanceDefBonus || 0;
                 const platformHp = char.platformHpBonus || 0;
                 const platformAtk = char.platformAttackBonus || 0;
                 const platformDef = char.platformDefenseBonus || 0;
@@ -3817,6 +4239,16 @@
                                 ${eqHp > 0 ? `<span style="color: #4CAF50;">HP +${eqHp}</span>` : ''}
                                 ${eqAtk > 0 ? `<span style="color: #f44336; margin-left: ${eqHp > 0 ? '12px' : '0'};">攻击 +${eqAtk}</span>` : ''}
                                 ${eqDef > 0 ? `<span style="color: #2196F3; margin-left: ${(eqHp > 0 || eqAtk > 0) ? '12px' : '0'};">防御 +${eqDef}</span>` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${enhanceHp > 0 || enhanceAtk > 0 || enhanceDef > 0 ? `
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">装备强化加成：</div>
+                            <div style="font-size: 0.9em;">
+                                ${enhanceHp > 0 ? `<span style="color: #4CAF50;">HP +${enhanceHp}</span>` : ''}
+                                ${enhanceAtk > 0 ? `<span style="color: #f44336; margin-left: ${enhanceHp > 0 ? '12px' : '0'};">攻击 +${enhanceAtk}</span>` : ''}
+                                ${enhanceDef > 0 ? `<span style="color: #2196F3; margin-left: ${(enhanceHp > 0 || enhanceAtk > 0) ? '12px' : '0'};">防御 +${enhanceDef}</span>` : ''}
                             </div>
                         </div>
                         ` : ''}
@@ -8209,13 +8641,22 @@
         
         // 玩家玩法列表
         let gameplayList = [
-            { id: 1, name: '主线副本挑战', staminaCost: 10, mainDungeonConfig: { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] } }
+            { id: 1, name: '主线副本挑战', staminaCost: 10, mainDungeonConfig: { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3], goldDrop: { enabled: true, minGold: 40, maxGold: 60 } } }
         ];
         
         // 资源消耗玩法列表
         let resourceConsumptionGameplayList = [
-            { id: 1, name: '招募角色', itemName: '招募券', type: 'recruit' }
+            { id: 1, name: '招募角色', itemName: '', type: 'recruit' } // itemName会在使用时动态获取
         ];
+        
+        // 更新资源消耗玩法列表中的itemName
+        function updateResourceGameplayItemNames() {
+            resourceConsumptionGameplayList.forEach(gameplay => {
+                if (gameplay.type === 'recruit') {
+                    gameplay.itemName = getRecruitTicketName();
+                }
+            });
+        }
         
         // 玩家账号信息
         let playerAccount = {
@@ -8252,14 +8693,21 @@
         let lastMainDungeonGains = {
             exp: 0,
             levelUp: false,
-            equipment: []
+            equipment: [],
+            resources: [], // [{resourceId, name, count}, ...]
+            gold: 0 // 金币掉落
         };
         
         // 初始化玩家经济模拟标签页
         function initEconomyTab() {
             loadPlayerEconomyData();
+            // 加载已保存的装备槽位强化表（如果还没加载）
+            if (!equipSlotLevelTable || equipSlotLevelTable.length === 0) {
+                loadSavedEquipSlotLevelTable();
+            }
             updateEconomySchemeSelect();
             renderGameplayList();
+            updateResourceGameplayItemNames();
             renderResourceGameplayList();
             renderBagItems();
             updateHeroSelects();
@@ -8267,6 +8715,8 @@
             updateEquipmentSelect();
             renderPlayerOwnedEquipment();
             renderHeroUpgradeConfig();
+            updateResourceSelect();
+            updateResourceLabels();
         }
         
         // 英雄升级配置数值区域展开/收起
@@ -8314,14 +8764,23 @@
                     }
                     if (data.gameplayList) {
                         gameplayList = data.gameplayList;
-                        // 确保主线副本挑战有品质权重配置
+                        // 确保主线副本挑战有品质权重配置和金币掉落配置
                         const mainDungeon = gameplayList.find(g => g.name === '主线副本挑战');
-                        if (mainDungeon && !mainDungeon.mainDungeonConfig) {
-                            mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                        if (mainDungeon) {
+                            if (!mainDungeon.mainDungeonConfig) {
+                                mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                            }
+                            // 确保有金币掉落配置（默认启用，40-60金币）
+                            if (!mainDungeon.mainDungeonConfig.goldDrop) {
+                                mainDungeon.mainDungeonConfig.goldDrop = { enabled: true, minGold: 40, maxGold: 60 };
+                            }
                         }
                     }
                     if (data.account) Object.assign(playerAccount, data.account);
-                    if (data.bagItems) bagItems = data.bagItems;
+                    if (data.bagItems) {
+                        bagItems = data.bagItems;
+                        cleanupCoreResourcesFromBag(); // 清理核心资源
+                    }
                     if (data.playerHeroes && data.playerHeroes.length > 0) {
                         playerHeroes = data.playerHeroes;
                     }
@@ -8334,6 +8793,17 @@
                     }
                     if (data.recruitBoxLevel != null) recruitBoxLevel = data.recruitBoxLevel;
                     if (data.recruitCount != null) recruitCount = data.recruitCount;
+                    if (data.equipSlotLevels) {
+                        equipSlotLevels = data.equipSlotLevels;
+                        // 确保结构完整
+                        for (let jobId = 1; jobId <= 4; jobId++) {
+                            if (!equipSlotLevels[jobId]) equipSlotLevels[jobId] = {};
+                            const typeNames = ['头', '身', '手', '脚'];
+                            typeNames.forEach(typeName => {
+                                if (equipSlotLevels[jobId][typeName] == null) equipSlotLevels[jobId][typeName] = 0;
+                            });
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('加载玩家经济数据失败:', error);
@@ -8355,6 +8825,21 @@
             playerHeroes.forEach(h => {
                 if (h.copies == null) h.copies = 0;
             });
+            
+            // 检查是否有装备槽位强化玩法，如果没有且已加载强化表，则添加
+            const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+            if (!hasEquipSlotEnhance && equipSlotLevelTable && equipSlotLevelTable.length > 0) {
+                const maxId = resourceConsumptionGameplayList.length > 0 
+                    ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                    : 0;
+                resourceConsumptionGameplayList.push({
+                    id: maxId + 1,
+                    name: '装备槽位强化',
+                    itemName: '',
+                    type: 'equipSlotEnhance'
+                });
+                savePlayerEconomyData();
+            }
             
             // 加载英雄升级配置
             loadHeroUpgradeConfig();
@@ -8469,14 +8954,23 @@
                     }
                     if (data.gameplayList) {
                         gameplayList = data.gameplayList;
-                        // 确保主线副本挑战有品质权重配置
+                        // 确保主线副本挑战有品质权重配置和金币掉落配置
                         const mainDungeon = gameplayList.find(g => g.name === '主线副本挑战');
-                        if (mainDungeon && !mainDungeon.mainDungeonConfig) {
-                            mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                        if (mainDungeon) {
+                            if (!mainDungeon.mainDungeonConfig) {
+                                mainDungeon.mainDungeonConfig = { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] };
+                            }
+                            // 确保有金币掉落配置（默认启用，40-60金币）
+                            if (!mainDungeon.mainDungeonConfig.goldDrop) {
+                                mainDungeon.mainDungeonConfig.goldDrop = { enabled: true, minGold: 40, maxGold: 60 };
+                            }
                         }
                     }
                     if (data.account) Object.assign(playerAccount, data.account);
-                    if (data.bagItems) bagItems = data.bagItems;
+                    if (data.bagItems) {
+                        bagItems = data.bagItems;
+                        cleanupCoreResourcesFromBag(); // 清理核心资源
+                    }
                     if (data.playerHeroes && data.playerHeroes.length > 0) {
                         playerHeroes = data.playerHeroes;
                     }
@@ -8489,6 +8983,17 @@
                     }
                     if (data.recruitBoxLevel != null) recruitBoxLevel = data.recruitBoxLevel;
                     if (data.recruitCount != null) recruitCount = data.recruitCount;
+                    if (data.equipSlotLevels) {
+                        equipSlotLevels = data.equipSlotLevels;
+                        // 确保结构完整
+                        for (let jobId = 1; jobId <= 4; jobId++) {
+                            if (!equipSlotLevels[jobId]) equipSlotLevels[jobId] = {};
+                            const typeNames = ['头', '身', '手', '脚'];
+                            typeNames.forEach(typeName => {
+                                if (equipSlotLevels[jobId][typeName] == null) equipSlotLevels[jobId][typeName] = 0;
+                            });
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('加载玩家经济数据失败:', error);
@@ -8516,6 +9021,21 @@
                 resourceConsumptionGameplayList = [
                     { id: 1, name: '招募角色', itemName: '招募券', type: 'recruit' }
                 ];
+                savePlayerEconomyData();
+            }
+            
+            // 检查是否有装备槽位强化玩法，如果没有且已加载强化表，则添加
+            const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+            if (!hasEquipSlotEnhance && equipSlotLevelTable && equipSlotLevelTable.length > 0) {
+                const maxId = resourceConsumptionGameplayList.length > 0 
+                    ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                    : 0;
+                resourceConsumptionGameplayList.push({
+                    id: maxId + 1,
+                    name: '装备槽位强化',
+                    itemName: '',
+                    type: 'equipSlotEnhance'
+                });
                 savePlayerEconomyData();
             }
             
@@ -8563,7 +9083,8 @@
                     playerEquipment: playerEquipment,
                     resourceConsumptionGameplayList: resourceConsumptionGameplayList,
                     recruitBoxLevel: recruitBoxLevel,
-                    recruitCount: recruitCount
+                    recruitCount: recruitCount,
+                    equipSlotLevels: equipSlotLevels
                 };
                 localStorage.setItem('playerEconomyData', JSON.stringify(data));
             } catch (error) {
@@ -8622,7 +9143,8 @@
                 resourceConsumptionGameplayList: JSON.parse(JSON.stringify(resourceConsumptionGameplayList)),
                 recruitBoxLevel: recruitBoxLevel,
                 recruitCount: recruitCount,
-                heroUpgradeConfig: JSON.parse(JSON.stringify(heroUpgradeConfig))
+                heroUpgradeConfig: JSON.parse(JSON.stringify(heroUpgradeConfig)),
+                equipSlotLevels: JSON.parse(JSON.stringify(equipSlotLevels))
             };
             const id = 'eco_' + Date.now();
             let list = schemes.filter(s => s.id !== currentEconomySchemeId);
@@ -8672,7 +9194,10 @@
             }
             if (s.resources) Object.assign(playerResources, s.resources);
             if (s.account) Object.assign(playerAccount, s.account);
-            if (Array.isArray(s.bagItems)) bagItems = s.bagItems;
+            if (Array.isArray(s.bagItems)) {
+                bagItems = s.bagItems;
+                cleanupCoreResourcesFromBag(); // 清理核心资源
+            }
             if (Array.isArray(s.playerHeroes)) playerHeroes = s.playerHeroes;
             if (Array.isArray(s.playerEquipment)) playerEquipment = s.playerEquipment.map(x => String(x));
             if (Array.isArray(s.gameplayList)) gameplayList = s.gameplayList;
@@ -8681,6 +9206,26 @@
             if (s.recruitCount != null) recruitCount = s.recruitCount;
             if (Array.isArray(s.heroUpgradeConfig) && s.heroUpgradeConfig.length >= 30) {
                 heroUpgradeConfig = s.heroUpgradeConfig;
+            }
+            // 加载装备强化数据
+            if (s.equipSlotLevels) {
+                equipSlotLevels = JSON.parse(JSON.stringify(s.equipSlotLevels));
+                // 确保结构完整
+                for (let jobId = 1; jobId <= 4; jobId++) {
+                    if (!equipSlotLevels[jobId]) equipSlotLevels[jobId] = {};
+                    const typeNames = ['头', '身', '手', '脚'];
+                    typeNames.forEach(typeName => {
+                        if (equipSlotLevels[jobId][typeName] == null) equipSlotLevels[jobId][typeName] = 0;
+                    });
+                }
+            } else {
+                // 如果方案中没有强化数据，初始化为默认值
+                equipSlotLevels = {
+                    1: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    2: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    3: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    4: { '头': 0, '身': 0, '手': 0, '脚': 0 }
+                };
             }
             currentEconomySchemeId = id;
             savePlayerEconomyData();
@@ -8717,6 +9262,22 @@
             if (dailyRecruitInput) dailyRecruitInput.value = playerResources.dailyRecruitTickets != null ? playerResources.dailyRecruitTickets : 0;
             if (currentDayEl) currentDayEl.textContent = playerResources.currentDay != null ? playerResources.currentDay : 1;
             if (nameInput) nameInput.value = s.name || '';
+            // 检查并添加装备强化玩法（如果equipSlotLevelTable已加载但玩法不存在）
+            if (equipSlotLevelTable && equipSlotLevelTable.length > 0) {
+                const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+                if (!hasEquipSlotEnhance) {
+                    const maxId = resourceConsumptionGameplayList.length > 0 
+                        ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                        : 0;
+                    resourceConsumptionGameplayList.push({
+                        id: maxId + 1,
+                        name: '装备槽位强化',
+                        type: 'equipSlotEnhance'
+                    });
+                    savePlayerEconomyData();
+                }
+            }
+            
             renderBagItems();
             renderPlayerHeroes();
             renderGameplayList();
@@ -8794,7 +9355,13 @@
                 resourceConsumptionGameplayList: JSON.parse(JSON.stringify(s.resourceConsumptionGameplayList || [])),
                 recruitBoxLevel: s.recruitBoxLevel != null ? s.recruitBoxLevel : 1,
                 recruitCount: s.recruitCount != null ? s.recruitCount : 0,
-                heroUpgradeConfig: Array.isArray(s.heroUpgradeConfig) ? JSON.parse(JSON.stringify(s.heroUpgradeConfig)) : []
+                heroUpgradeConfig: Array.isArray(s.heroUpgradeConfig) ? JSON.parse(JSON.stringify(s.heroUpgradeConfig)) : [],
+                equipSlotLevels: s.equipSlotLevels ? JSON.parse(JSON.stringify(s.equipSlotLevels)) : {
+                    1: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    2: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    3: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                    4: { '头': 0, '身': 0, '手': 0, '脚': 0 }
+                }
             };
             schemes.push(copy);
             localStorage.setItem(ECONOMY_SCHEMES_STORAGE_KEY, JSON.stringify(schemes));
@@ -8814,7 +9381,7 @@
             
             // 重置所有数据到初始状态
             // 清空副本挑战奖励信息、招募角色获得信息
-            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [] };
+            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [], resources: [], gold: 0 };
             lastRecruitResult = { heroes: [], gold: 0 };
             
             // 重置当前天数为1
@@ -8835,7 +9402,7 @@
             
             // 重置背包（只保留20个招募券）
             bagItems = [];
-            bagItems.push({ id: Date.now(), name: '招募券', count: 20 });
+            bagItems.push({ id: Date.now(), resourceId: '1021', name: getRecruitTicketName(), count: 20 });
             
             // 重置英雄列表为默认5个角色
             playerHeroes = [
@@ -8857,7 +9424,7 @@
             
             // 重置玩法列表为默认值
             gameplayList = [
-                { id: 1, name: '主线副本挑战', staminaCost: 10, mainDungeonConfig: { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3] } }
+                { id: 1, name: '主线副本挑战', staminaCost: 10, mainDungeonConfig: { qualityWeights: { 1: 60, 2: 30, 3: 10 }, qualities: [1, 2, 3], goldDrop: { enabled: true, minGold: 40, maxGold: 60 } } }
             ];
             
             // 重置资源消耗玩法列表为默认值
@@ -8953,9 +9520,15 @@
             playerResources.currentDay = (playerResources.currentDay || 1) + n;
             
             if (addTickets > 0) {
-                const existing = bagItems.find(i => i.name === '招募券');
-                if (existing) existing.count += addTickets;
-                else bagItems.push({ id: Date.now(), name: '招募券', count: addTickets });
+                const recruitTicketName = getRecruitTicketName();
+                const existing = bagItems.find(i => i.resourceId === '1021' || i.name === recruitTicketName);
+                if (existing) {
+                    existing.count += addTickets;
+                    if (!existing.resourceId) existing.resourceId = '1021';
+                    if (!existing.name) existing.name = recruitTicketName;
+                } else {
+                    bagItems.push({ id: Date.now(), resourceId: '1021', name: recruitTicketName, count: addTickets });
+                }
             }
             
             const currentStaminaEl = document.getElementById('playerCurrentStamina');
@@ -8975,7 +9548,7 @@
             if (addStamina) parts.push(`体力 +${addStamina}`);
             if (addGold) parts.push(`金币 +${addGold}`);
             if (addDiamond) parts.push(`钻石 +${addDiamond}`);
-            if (addTickets) parts.push(`招募券 +${addTickets}`);
+            if (addTickets) parts.push(`${getRecruitTicketName()} +${addTickets}`);
             showMessage(parts.join('，') + (n > 1 ? `（推进${n}天）` : ''), 'success');
         }
         
@@ -8991,10 +9564,11 @@
         
         // 重置账号信息：清空当前资源、英雄恢复默认、等级重置、已拥有装备清空
         window.resetAccountInfo = function() {
-            if (!confirm('确定要重置账号信息吗？将清空当前资源、恢复默认英雄、重置等级、清空已拥有装备、重置天数和招募进度；重置后初始获得20招募券，并清空副本挑战奖励与招募获得信息。')) return;
+            const recruitTicketName = getRecruitTicketName();
+            if (!confirm(`确定要重置账号信息吗？将清空当前资源、恢复默认英雄、重置等级、清空已拥有装备、重置天数和招募进度；重置后初始获得20${recruitTicketName}，并清空副本挑战奖励与招募获得信息。`)) return;
             
             // 清空副本挑战奖励信息、招募角色获得信息
-            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [] };
+            lastMainDungeonGains = { exp: 0, levelUp: false, equipment: [], resources: [], gold: 0 };
             lastRecruitResult = { heroes: [], gold: 0 };
             
             // 重置当前天数为1
@@ -9012,8 +9586,8 @@
             
             playerResources.gold = 0;
             playerResources.diamond = 0;
-            bagItems = bagItems.filter(i => i.name !== '招募券');
-            bagItems.push({ id: Date.now(), name: '招募券', count: 20 });
+            bagItems = bagItems.filter(i => i.resourceId !== '1021' && i.name !== recruitTicketName);
+            bagItems.push({ id: Date.now(), resourceId: '1021', name: recruitTicketName, count: 20 });
             
             playerHeroes = [
                 { heroId: '11001', level: 1, copies: 0 },
@@ -9029,6 +9603,14 @@
             playerAccount.expRequired = resetExpReq != null ? resetExpReq : 100;
             
             playerEquipment = [];
+            
+            // 重置装备强化数据
+            equipSlotLevels = {
+                1: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                2: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                3: { '头': 0, '身': 0, '手': 0, '脚': 0 },
+                4: { '头': 0, '身': 0, '手': 0, '脚': 0 }
+            };
             
             const currentStaminaInput = document.getElementById('playerCurrentStamina');
             const goldInput = document.getElementById('playerGold');
@@ -9116,7 +9698,7 @@
             return parseInt(entries[0][0], 10) || 1;
         }
         
-        // 执行单次主线副本挑战的核心逻辑（返回 { leveledUp, dropped }）
+        // 执行单次主线副本挑战的核心逻辑（返回 { leveledUp, dropped, resources }）
         function executeMainDungeonOnce(gameplay) {
             const curLevel = playerAccount.level || 1;
             playerAccount.exp += 10;
@@ -9177,7 +9759,59 @@
                 }
             }
             
-            return { leveledUp, dropped };
+            // 资源掉落逻辑（1011, 1012, 1013, 1014）
+            const resourceDrops = [];
+            const resourceIds = ['1011', '1012', '1013', '1014'];
+            const resourceDropsConfig = cfg.resourceDrops || {};
+            
+            resourceIds.forEach(resourceId => {
+                const dropConfig = resourceDropsConfig[resourceId];
+                // 如果未配置或启用，则使用默认值（0-5随机）
+                const enabled = dropConfig == null || dropConfig.enabled !== false;
+                if (enabled) {
+                    const minCount = dropConfig && dropConfig.minCount != null ? dropConfig.minCount : 0;
+                    const maxCount = dropConfig && dropConfig.maxCount != null ? dropConfig.maxCount : 5;
+                    const dropCount = Math.floor(Math.random() * (maxCount - minCount + 1)) + minCount;
+                    
+                    if (dropCount > 0) {
+                        const resourceName = getResourceName(resourceId);
+                        resourceDrops.push({
+                            resourceId: resourceId,
+                            name: resourceName || resourceId,
+                            count: dropCount
+                        });
+                        
+                        // 添加到背包
+                        const existingItem = bagItems.find(item => item.resourceId === resourceId);
+                        if (existingItem) {
+                            existingItem.count += dropCount;
+                        } else {
+                            bagItems.push({
+                                id: Date.now(),
+                                resourceId: resourceId,
+                                name: resourceName || resourceId,
+                                count: dropCount
+                            });
+                        }
+                    }
+                }
+            });
+            
+            // 金币掉落逻辑
+            let goldDrop = 0;
+            const goldDropConfig = cfg.goldDrop || {};
+            const goldEnabled = goldDropConfig.enabled !== false; // 默认启用
+            if (goldEnabled) {
+                const minGold = goldDropConfig.minGold != null ? goldDropConfig.minGold : 40;
+                const maxGold = goldDropConfig.maxGold != null ? goldDropConfig.maxGold : 60;
+                goldDrop = Math.floor(Math.random() * (maxGold - minGold + 1)) + minGold;
+                
+                if (goldDrop > 0) {
+                    playerResources.gold = (playerResources.gold || 0) + goldDrop;
+                }
+            }
+            
+            return { leveledUp, dropped, resources: resourceDrops, gold: goldDrop };
         }
         
         // 执行玩法（消耗体力）
@@ -9210,16 +9844,43 @@
                 lastMainDungeonGains = {
                     exp: 10,
                     levelUp: result.leveledUp,
-                    equipment: result.dropped
+                    equipment: result.dropped,
+                    resources: result.resources || [],
+                    gold: result.gold || 0
                 };
                 
+                // 如果有资源掉落，更新背包显示
+                if (result.resources && result.resources.length > 0) {
+                    renderBagItems();
+                }
+                
+                // 如果有金币掉落，更新金币显示
+                if (result.gold > 0) {
+                    const goldInput = document.getElementById('playerGold');
+                    if (goldInput) goldInput.value = playerResources.gold;
+                    syncEconomyGoldDisplay();
+                }
+                
+                let resultMsg = '';
                 if (result.dropped.length > 0) {
                     renderPlayerOwnedEquipment();
                     const equipmentList = result.dropped.map(eq => {
                         const color = getQualityTextColor(eq.quality);
                         return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
                     }).join('、');
-                    showMessage(`获得装备：${equipmentList}`, 'success');
+                    resultMsg += `获得装备：${equipmentList}`;
+                }
+                if (result.resources && result.resources.length > 0) {
+                    const resourceList = result.resources.map(res => `${res.name} x${res.count}`).join('、');
+                    if (resultMsg) resultMsg += '；';
+                    resultMsg += `获得资源：${resourceList}`;
+                }
+                if (result.gold > 0) {
+                    if (resultMsg) resultMsg += '；';
+                    resultMsg += `获得金币：${result.gold}`;
+                }
+                if (resultMsg) {
+                    showMessage(resultMsg, 'success');
                 }
                 
                 renderGameplayList();
@@ -9242,6 +9903,8 @@
             
             if (gameplay.name === '主线副本挑战') {
                 let totalExp = 0, totalLevelUps = 0, allDropped = [];
+                const allResources = {};
+                let totalGold = 0;
                 const initialLevel = playerAccount.level || 1;
                 
                 for (let i = 0; i < 10; i++) {
@@ -9250,6 +9913,17 @@
                     totalExp += 10;
                     if (result.leveledUp) totalLevelUps++;
                     allDropped = allDropped.concat(result.dropped);
+                    if (result.resources) {
+                        result.resources.forEach(res => {
+                            if (!allResources[res.resourceId]) {
+                                allResources[res.resourceId] = { resourceId: res.resourceId, name: res.name, count: 0 };
+                            }
+                            allResources[res.resourceId].count += res.count;
+                        });
+                    }
+                    if (result.gold) {
+                        totalGold += result.gold;
+                    }
                 }
                 
                 const currentStaminaInput = document.getElementById('playerCurrentStamina');
@@ -9257,33 +9931,48 @@
                 const expInput = document.getElementById('playerExp');
                 const expRequiredInput = document.getElementById('playerExpRequired');
                 const levelInput = document.getElementById('playerLevel');
+                const goldInput = document.getElementById('playerGold');
                 const dispReq = getExpRequiredForLevel((playerAccount.level || 1) + 1);
                 if (expInput) expInput.value = playerAccount.exp;
                 if (expRequiredInput) expRequiredInput.value = dispReq != null ? dispReq : playerAccount.expRequired;
                 if (levelInput) levelInput.value = playerAccount.level;
+                if (goldInput) goldInput.value = playerResources.gold;
+                syncEconomyGoldDisplay();
                 
                 lastMainDungeonGains = {
                     exp: totalExp,
                     levelUp: totalLevelUps > 0,
-                    equipment: allDropped
+                    equipment: allDropped,
+                    resources: Object.values(allResources),
+                    gold: totalGold
                 };
                 
                 if (allDropped.length > 0) {
                     renderPlayerOwnedEquipment();
                 }
+                if (Object.keys(allResources).length > 0) {
+                    renderBagItems();
+                }
                 
                 renderGameplayList();
                 savePlayerEconomyData();
                 
-                let equipmentMsg = '';
+                let gainMsg = '';
                 if (allDropped.length > 0) {
                     const equipmentList = allDropped.map(eq => {
                         const color = getQualityTextColor(eq.quality);
                         return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
                     }).join('、');
-                    equipmentMsg = `，获得装备：${equipmentList}`;
+                    gainMsg += `，获得装备：${equipmentList}`;
                 }
-                const msg = `已执行10次，消耗${needed}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${equipmentMsg}`;
+                if (Object.keys(allResources).length > 0) {
+                    const resourceList = Object.values(allResources).map(res => `${res.name} x${res.count}`).join('、');
+                    gainMsg += `，获得资源：${resourceList}`;
+                }
+                if (totalGold > 0) {
+                    gainMsg += `，获得金币：${totalGold}`;
+                }
+                const msg = `已执行10次，消耗${needed}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${gainMsg}`;
                 showMessage(msg, 'success');
             } else {
                 showMessage('该功能仅支持主线副本挑战', 'error');
@@ -9302,6 +9991,8 @@
             
             if (gameplay.name === '主线副本挑战') {
                 let count = 0, totalExp = 0, totalLevelUps = 0, allDropped = [];
+                const allResources = {};
+                let totalGold = 0;
                 const initialLevel = playerAccount.level || 1;
                 
                 while (playerResources.currentStamina >= gameplay.staminaCost) {
@@ -9311,6 +10002,17 @@
                     totalExp += 10;
                     if (result.leveledUp) totalLevelUps++;
                     allDropped = allDropped.concat(result.dropped);
+                    if (result.resources) {
+                        result.resources.forEach(res => {
+                            if (!allResources[res.resourceId]) {
+                                allResources[res.resourceId] = { resourceId: res.resourceId, name: res.name, count: 0 };
+                            }
+                            allResources[res.resourceId].count += res.count;
+                        });
+                    }
+                    if (result.gold) {
+                        totalGold += result.gold;
+                    }
                 }
                 
                 const currentStaminaInput = document.getElementById('playerCurrentStamina');
@@ -9318,33 +10020,48 @@
                 const expInput = document.getElementById('playerExp');
                 const expRequiredInput = document.getElementById('playerExpRequired');
                 const levelInput = document.getElementById('playerLevel');
+                const goldInput = document.getElementById('playerGold');
                 const dispReq = getExpRequiredForLevel((playerAccount.level || 1) + 1);
                 if (expInput) expInput.value = playerAccount.exp;
                 if (expRequiredInput) expRequiredInput.value = dispReq != null ? dispReq : playerAccount.expRequired;
                 if (levelInput) levelInput.value = playerAccount.level;
+                if (goldInput) goldInput.value = playerResources.gold;
+                syncEconomyGoldDisplay();
                 
                 lastMainDungeonGains = {
                     exp: totalExp,
                     levelUp: totalLevelUps > 0,
-                    equipment: allDropped
+                    equipment: allDropped,
+                    resources: Object.values(allResources),
+                    gold: totalGold
                 };
                 
                 if (allDropped.length > 0) {
                     renderPlayerOwnedEquipment();
                 }
+                if (Object.keys(allResources).length > 0) {
+                    renderBagItems();
+                }
                 
                 renderGameplayList();
                 savePlayerEconomyData();
                 
-                let equipmentMsg = '';
+                let gainMsg = '';
                 if (allDropped.length > 0) {
                     const equipmentList = allDropped.map(eq => {
                         const color = getQualityTextColor(eq.quality);
                         return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
                     }).join('、');
-                    equipmentMsg = `，获得装备：${equipmentList}`;
+                    gainMsg += `，获得装备：${equipmentList}`;
                 }
-                const msg = `已执行${count}次，消耗${count * gameplay.staminaCost}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${equipmentMsg}`;
+                if (Object.keys(allResources).length > 0) {
+                    const resourceList = Object.values(allResources).map(res => `${res.name} x${res.count}`).join('、');
+                    gainMsg += `，获得资源：${resourceList}`;
+                }
+                if (totalGold > 0) {
+                    gainMsg += `，获得金币：${totalGold}`;
+                }
+                const msg = `已执行${count}次，消耗${count * gameplay.staminaCost}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${gainMsg}`;
                 showMessage(msg, 'success');
             } else {
                 showMessage('该功能仅支持主线副本挑战', 'error');
@@ -9385,12 +10102,61 @@
                                     <div><label style="color: #666;">品质3权重</label><input type="number" min="0" value="${q3}" onchange="updateMainDungeonQualityWeight(3, this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" /></div>
                                 </div>
                             </div>
+                            <div style="margin-bottom: 12px;">
+                                <button type="button" id="mainDungeonGoldDropToggleBtn_${gameplay.id}" onclick="toggleMainDungeonGoldDropConfig(${gameplay.id})" style="padding: 6px 14px; font-size: 0.85em; border: 2px solid #667eea; border-radius: 6px; background: #f0f4ff; color: #667eea; cursor: pointer; width: 100%; margin-bottom: 8px;">展开金币掉落配置</button>
+                                <button type="button" id="mainDungeonResourceDropsToggleBtn_${gameplay.id}" onclick="toggleMainDungeonResourceDropsConfig(${gameplay.id})" style="padding: 6px 14px; font-size: 0.85em; border: 2px solid #667eea; border-radius: 6px; background: #f0f4ff; color: #667eea; cursor: pointer; width: 100%;">展开资源掉落配置</button>
+                            </div>
+                            <div id="mainDungeonGoldDropConfigArea_${gameplay.id}" style="display: none; padding: 10px; background: #f8f9ff; border-radius: 6px; font-size: 0.9em; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">金币掉落配置</div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <input type="checkbox" id="goldDropEnabled_${gameplay.id}" ${(cfg.goldDrop && cfg.goldDrop.enabled !== false) ? 'checked' : ''} onchange="updateMainDungeonGoldDrop(${gameplay.id}, 'enabled', this.checked)" style="width: 18px; height: 18px;" />
+                                    <label style="font-weight: 600; color: #333; cursor: pointer;" for="goldDropEnabled_${gameplay.id}">启用金币掉落</label>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-left: 26px;">
+                                    <div>
+                                        <label style="color: #666; font-size: 0.85em;">最小金币</label>
+                                        <input type="number" id="goldDropMinGold_${gameplay.id}" min="0" max="1000" value="${cfg.goldDrop && cfg.goldDrop.minGold != null ? cfg.goldDrop.minGold : 40}" onchange="updateMainDungeonGoldDrop(${gameplay.id}, 'minGold', this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" ${(cfg.goldDrop && cfg.goldDrop.enabled === false) ? 'disabled' : ''} />
+                                    </div>
+                                    <div>
+                                        <label style="color: #666; font-size: 0.85em;">最大金币</label>
+                                        <input type="number" id="goldDropMaxGold_${gameplay.id}" min="0" max="1000" value="${cfg.goldDrop && cfg.goldDrop.maxGold != null ? cfg.goldDrop.maxGold : 60}" onchange="updateMainDungeonGoldDrop(${gameplay.id}, 'maxGold', this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" ${(cfg.goldDrop && cfg.goldDrop.enabled === false) ? 'disabled' : ''} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="mainDungeonResourceDropsConfigArea_${gameplay.id}" style="display: none; padding: 10px; background: #f8f9ff; border-radius: 6px; font-size: 0.9em; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">资源掉落配置（1011, 1012, 1013, 1014）</div>
+                                ${['1011', '1012', '1013', '1014'].map(resourceId => {
+                                    const resourceName = getResourceName(resourceId) || resourceId;
+                                    const dropConfig = cfg.resourceDrops && cfg.resourceDrops[resourceId] || {};
+                                    const enabled = dropConfig.enabled !== false; // 默认启用
+                                    const minCount = dropConfig.minCount != null ? dropConfig.minCount : 0;
+                                    const maxCount = dropConfig.maxCount != null ? dropConfig.maxCount : 5;
+                                    return `
+                                        <div style="margin-bottom: 10px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                                <input type="checkbox" id="resourceDropEnabled_${gameplay.id}_${resourceId}" ${enabled ? 'checked' : ''} onchange="updateMainDungeonResourceDrop(${gameplay.id}, '${resourceId}', 'enabled', this.checked)" style="width: 18px; height: 18px;" />
+                                                <label style="font-weight: 600; color: #333; cursor: pointer;" for="resourceDropEnabled_${gameplay.id}_${resourceId}">${resourceName} (${resourceId})</label>
+                                            </div>
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-left: 26px;">
+                                                <div>
+                                                    <label style="color: #666; font-size: 0.85em;">最小数量</label>
+                                                    <input type="number" id="resourceDropMinCount_${gameplay.id}_${resourceId}" min="0" max="5" value="${minCount}" onchange="updateMainDungeonResourceDrop(${gameplay.id}, '${resourceId}', 'minCount', this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" ${!enabled ? 'disabled' : ''} />
+                                                </div>
+                                                <div>
+                                                    <label style="color: #666; font-size: 0.85em;">最大数量</label>
+                                                    <input type="number" id="resourceDropMaxCount_${gameplay.id}_${resourceId}" min="0" max="5" value="${maxCount}" onchange="updateMainDungeonResourceDrop(${gameplay.id}, '${resourceId}', 'maxCount', this.value)" style="width: 100%; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em;" ${!enabled ? 'disabled' : ''} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
                                 <button class="btn btn-primary" onclick="executeGameplay(${gameplay.id})" style="padding: 8px; font-size: 0.9em;">执行1次</button>
                                 <button class="btn btn-primary" onclick="executeGameplayTen(${gameplay.id})" style="padding: 8px; font-size: 0.9em;" ${playerResources.currentStamina < gameplay.staminaCost * 10 ? 'disabled' : ''}>执行10次</button>
                                 <button class="btn btn-primary" onclick="executeGameplayUntilNoStamina(${gameplay.id})" style="padding: 8px; font-size: 0.9em;" ${playerResources.currentStamina < gameplay.staminaCost ? 'disabled' : ''}>挑战到无体力</button>
                             </div>
-                            ${lastMainDungeonGains.exp > 0 || lastMainDungeonGains.equipment.length > 0 ? `
+                            ${lastMainDungeonGains.exp > 0 || lastMainDungeonGains.equipment.length > 0 || (lastMainDungeonGains.resources && lastMainDungeonGains.resources.length > 0) || lastMainDungeonGains.gold > 0 ? `
                             <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border-radius: 6px; border: 1px solid #339af0;">
                                 <div style="font-weight: 600; color: #1864ab; font-size: 0.9em; margin-bottom: 6px;">本次所有获得的资源</div>
                                 <div style="font-size: 0.85em; color: #333;">
@@ -9406,6 +10172,8 @@
                                             return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
                                         }
                                     }).join('、')}</div>` : ''}
+                                    ${lastMainDungeonGains.resources && lastMainDungeonGains.resources.length > 0 ? `<div>资源：${lastMainDungeonGains.resources.map(res => `${res.name} x${res.count}`).join('、')}</div>` : ''}
+                                    ${lastMainDungeonGains.gold > 0 ? `<div>金币：+${lastMainDungeonGains.gold}</div>` : ''}
                                 </div>
                             </div>
                             ` : ''}
@@ -9433,6 +10201,73 @@
             if (!g || !g.mainDungeonConfig) return;
             if (!g.mainDungeonConfig.qualityWeights) g.mainDungeonConfig.qualityWeights = {};
             g.mainDungeonConfig.qualityWeights[quality] = parseInt(value, 10) || 0;
+            savePlayerEconomyData();
+        };
+        
+        // 切换主线副本资源掉落配置显示/隐藏
+        window.toggleMainDungeonResourceDropsConfig = function(gameplayId) {
+            const area = document.getElementById(`mainDungeonResourceDropsConfigArea_${gameplayId}`);
+            const btn = document.getElementById(`mainDungeonResourceDropsToggleBtn_${gameplayId}`);
+            if (!area || !btn) return;
+            
+            const isVisible = area.style.display !== 'none';
+            area.style.display = isVisible ? 'none' : 'block';
+            btn.textContent = isVisible ? '展开资源掉落配置' : '收起资源掉落配置';
+        };
+        
+        // 切换主线副本金币掉落配置显示/隐藏
+        window.toggleMainDungeonGoldDropConfig = function(gameplayId) {
+            const area = document.getElementById(`mainDungeonGoldDropConfigArea_${gameplayId}`);
+            const btn = document.getElementById(`mainDungeonGoldDropToggleBtn_${gameplayId}`);
+            if (!area || !btn) return;
+            
+            const isVisible = area.style.display !== 'none';
+            area.style.display = isVisible ? 'none' : 'block';
+            btn.textContent = isVisible ? '展开金币掉落配置' : '收起金币掉落配置';
+        };
+        
+        // 更新主线副本金币掉落配置
+        window.updateMainDungeonGoldDrop = function(gameplayId, field, value) {
+            const g = gameplayList.find(x => x.id === gameplayId && x.name === '主线副本挑战');
+            if (!g || !g.mainDungeonConfig) return;
+            if (!g.mainDungeonConfig.goldDrop) g.mainDungeonConfig.goldDrop = {};
+            
+            if (field === 'enabled') {
+                g.mainDungeonConfig.goldDrop.enabled = value;
+                // 更新输入框的禁用状态
+                const minInput = document.getElementById(`goldDropMinGold_${gameplayId}`);
+                const maxInput = document.getElementById(`goldDropMaxGold_${gameplayId}`);
+                if (minInput) minInput.disabled = !value;
+                if (maxInput) maxInput.disabled = !value;
+            } else if (field === 'minGold') {
+                g.mainDungeonConfig.goldDrop.minGold = Math.max(0, Math.min(1000, parseInt(value, 10) || 40));
+            } else if (field === 'maxGold') {
+                g.mainDungeonConfig.goldDrop.maxGold = Math.max(0, Math.min(1000, parseInt(value, 10) || 60));
+            }
+            
+            savePlayerEconomyData();
+        };
+        
+        // 更新主线副本资源掉落配置
+        window.updateMainDungeonResourceDrop = function(gameplayId, resourceId, field, value) {
+            const g = gameplayList.find(x => x.id === gameplayId && x.name === '主线副本挑战');
+            if (!g || !g.mainDungeonConfig) return;
+            if (!g.mainDungeonConfig.resourceDrops) g.mainDungeonConfig.resourceDrops = {};
+            if (!g.mainDungeonConfig.resourceDrops[resourceId]) g.mainDungeonConfig.resourceDrops[resourceId] = {};
+            
+            if (field === 'enabled') {
+                g.mainDungeonConfig.resourceDrops[resourceId].enabled = value;
+                // 更新输入框的禁用状态
+                const minInput = document.getElementById(`resourceDropMinCount_${gameplayId}_${resourceId}`);
+                const maxInput = document.getElementById(`resourceDropMaxCount_${gameplayId}_${resourceId}`);
+                if (minInput) minInput.disabled = !value;
+                if (maxInput) maxInput.disabled = !value;
+            } else if (field === 'minCount') {
+                g.mainDungeonConfig.resourceDrops[resourceId].minCount = Math.max(0, Math.min(5, parseInt(value, 10) || 0));
+            } else if (field === 'maxCount') {
+                g.mainDungeonConfig.resourceDrops[resourceId].maxCount = Math.max(0, Math.min(5, parseInt(value, 10) || 5));
+            }
+            
             savePlayerEconomyData();
         };
         
@@ -9586,8 +10421,8 @@
         
         // 执行招募：单抽
         window.executeRecruitSingle = function() {
-            const itemName = '招募券';
-            const item = bagItems.find(item => item.name === itemName);
+            const itemName = getRecruitTicketName();
+            const item = bagItems.find(item => item.resourceId === '1021' || item.name === itemName);
             if (!item || item.count < 1) {
                 showMessage(`背包中没有足够的${itemName}！`, 'error');
                 return;
@@ -9606,14 +10441,14 @@
         
         // 执行招募：10连抽
         window.executeRecruitTen = function() {
-            const itemName = '招募券';
-            const item = bagItems.find(item => item.name === itemName);
+            const itemName = getRecruitTicketName();
+            const item = bagItems.find(item => item.resourceId === '1021' || item.name === itemName);
             if (!item || item.count < 10) {
                 showMessage(`背包中没有足够的${itemName}！需要10张`, 'error');
                 return;
             }
             item.count -= 10;
-            if (item.count === 0) bagItems = bagItems.filter(i => i.name !== itemName);
+            if (item.count === 0) bagItems = bagItems.filter(i => i.resourceId !== '1021' && i.name !== itemName);
             applyRecruitCount(10);
             lastRecruitResult = runRecruitDraws(10);
             renderBagItems();
@@ -9626,14 +10461,14 @@
         
         // 执行招募：抽光
         window.executeRecruitAll = function() {
-            const itemName = '招募券';
-            const item = bagItems.find(item => item.name === itemName);
+            const itemName = getRecruitTicketName();
+            const item = bagItems.find(item => item.resourceId === '1021' || item.name === itemName);
             if (!item || item.count === 0) {
                 showMessage(`背包中没有${itemName}！`, 'error');
                 return;
             }
             const usedCount = item.count;
-            bagItems = bagItems.filter(i => i.name !== itemName);
+            bagItems = bagItems.filter(i => i.resourceId !== '1021' && i.name !== itemName);
             applyRecruitCount(usedCount);
             lastRecruitResult = runRecruitDraws(usedCount);
             renderBagItems();
@@ -9647,6 +10482,8 @@
         function syncEconomyGoldDisplay() {
             const el = document.getElementById('playerGold');
             if (el) el.value = playerResources.gold || 0;
+            // 金币变化时，更新装备强化玩法显示（因为可能使用金币作为材料）
+            renderResourceGameplayList();
         }
         
         // 渲染资源消耗玩法列表
@@ -9654,14 +10491,22 @@
             const listEl = document.getElementById('resourceGameplayList');
             if (!listEl) return;
             
+            // 更新资源消耗玩法列表中的itemName
+            updateResourceGameplayItemNames();
+            
             if (resourceConsumptionGameplayList.length === 0) {
                 listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; grid-column: 1 / -1;">暂无资源消耗玩法，请添加玩法</div>';
                 return;
             }
             
             listEl.innerHTML = resourceConsumptionGameplayList.map(gameplay => {
-                // 获取背包中该道具的数量
-                const item = bagItems.find(i => i.name === gameplay.itemName);
+                // 获取背包中该道具的数量（支持按resourceId或name查找）
+                let item = null;
+                if (gameplay.type === 'recruit') {
+                    item = bagItems.find(i => i.resourceId === '1021' || i.name === gameplay.itemName);
+                } else {
+                    item = bagItems.find(i => i.name === gameplay.itemName);
+                }
                 const itemCount = item ? item.count : 0;
                 
                 // 如果是招募角色玩法，显示特殊按钮
@@ -9720,6 +10565,9 @@
                             </div>
                         </div>
                     `;
+                } else if (gameplay.type === 'equipSlotEnhance') {
+                    // 装备槽位强化玩法
+                    return renderEquipSlotEnhanceGameplay(gameplay);
                 } else {
                     // 普通资源消耗玩法
                     return `
@@ -9739,12 +10587,388 @@
             }).join('');
         }
         
+        // 获取资源数量（核心资源从playerResources获取，其他从bagItems获取）
+        function getResourceCount(resourceId) {
+            const resourceIdStr = String(resourceId);
+            // 核心资源：1001=金币, 1002=钻石, 1003=体力
+            if (resourceIdStr === '1001') {
+                return playerResources.gold || 0;
+            } else if (resourceIdStr === '1002') {
+                return playerResources.diamond || 0;
+            } else if (resourceIdStr === '1003') {
+                return playerResources.currentStamina || 0;
+            } else {
+                // 其他资源从背包获取
+                const item = bagItems.find(i => i.resourceId === resourceIdStr);
+                return item ? item.count : 0;
+            }
+        }
+        
+        // 获取装备槽位当前等级的属性加成（不累加，只取当前等级）
+        function getEquipSlotCurrentAttributes(jobId, typeId, currentLevel) {
+            if (!equipSlotLevelTable || currentLevel <= 0) {
+                return { hp: 0, atk: 0, def: 0 };
+            }
+            
+            // 只获取当前等级的数据
+            const levelData = equipSlotLevelTable.find(row => 
+                row.type === typeId && row.heroClasses === jobId && row.slotLevel === currentLevel
+            );
+            
+            if (levelData && levelData.attribute) {
+                return {
+                    hp: levelData.attribute.hp || 0,
+                    atk: levelData.attribute.atk || 0,
+                    def: levelData.attribute.def || 0
+                };
+            }
+            return { hp: 0, atk: 0, def: 0 };
+        }
+        
+        // 获取装备槽位累计属性加成（从等级1到当前等级累加）
+        function getEquipSlotTotalAttributes(jobId, typeId, currentLevel) {
+            if (!equipSlotLevelTable || currentLevel <= 0) {
+                return { hp: 0, atk: 0, def: 0 };
+            }
+            
+            let totalAttrs = { hp: 0, atk: 0, def: 0 };
+            for (let level = 1; level <= currentLevel; level++) {
+                const levelData = equipSlotLevelTable.find(row => 
+                    row.type === typeId && row.heroClasses === jobId && row.slotLevel === level
+                );
+                if (levelData && levelData.attribute) {
+                    totalAttrs.hp += levelData.attribute.hp || 0;
+                    totalAttrs.atk += levelData.attribute.atk || 0;
+                    totalAttrs.def += levelData.attribute.def || 0;
+                }
+            }
+            return totalAttrs;
+        }
+        
+        // 渲染主配置装备强化面板
+        function renderMainConfigEquipSlotEnhancePanel() {
+            const panel = document.getElementById('mainConfigEquipSlotEnhancePanel');
+            if (!panel) return;
+            
+            if (!equipSlotLevelTable || equipSlotLevelTable.length === 0) {
+                panel.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #999; padding: 20px;">请先上传装备表（包含EquipSlotLevel页签）</div>';
+                return;
+            }
+            
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            const jobNames = { 1: '坦克', 2: '战士', 3: '射手', 4: '辅助' };
+            
+            let html = '';
+            
+            // 4个职业
+            for (let jobId = 1; jobId <= 4; jobId++) {
+                let jobTotalHp = 0, jobTotalAtk = 0, jobTotalDef = 0;
+                
+                html += `
+                    <div style="padding: 15px; background: #f8f9ff; border-radius: 8px; border: 2px solid #e0e0e0;">
+                        <div style="font-weight: 600; color: #333; margin-bottom: 15px; text-align: center; font-size: 1em;">${jobNames[jobId]}</div>
+                `;
+                
+                // 4个部位
+                for (let typeId = 1; typeId <= 4; typeId++) {
+                    const typeName = typeNames[typeId];
+                    const currentLevel = mainConfigEquipSlotLevels[jobId] && mainConfigEquipSlotLevels[jobId][typeName] ? mainConfigEquipSlotLevels[jobId][typeName] : 0;
+                    
+                    // 获取当前等级的属性加成
+                    const currentAttrs = getEquipSlotCurrentAttributes(jobId, typeId, currentLevel);
+                    const currentAttrsHtml = [];
+                    if (currentAttrs.hp > 0) currentAttrsHtml.push(`血量 +${currentAttrs.hp}`);
+                    if (currentAttrs.atk > 0) currentAttrsHtml.push(`攻击 +${currentAttrs.atk}`);
+                    if (currentAttrs.def > 0) currentAttrsHtml.push(`防御 +${currentAttrs.def}`);
+                    
+                    // 累加到职业总加成
+                    jobTotalHp += currentAttrs.hp;
+                    jobTotalAtk += currentAttrs.atk;
+                    jobTotalDef += currentAttrs.def;
+                    
+                    html += `
+                        <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <div style="font-weight: 600; color: #333; font-size: 0.9em; margin-bottom: 6px;">${typeName}部</div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <label style="font-size: 0.85em; color: #666; min-width: 50px;">等级：</label>
+                                <input type="number" id="mainConfigEquipSlotLevel_${jobId}_${typeId}" 
+                                    min="0" value="${currentLevel}" 
+                                    onchange="updateMainConfigEquipSlotLevel(${jobId}, ${typeId}, this.value)"
+                                    ${useEconomySimulation && mainConfigEconomySchemeId ? 'disabled' : ''}
+                                    style="width: 80px; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 0.9em; text-align: center; ${useEconomySimulation && mainConfigEconomySchemeId ? 'background: #f5f5f5; cursor: not-allowed;' : ''}" />
+                            </div>
+                            ${useEconomySimulation && mainConfigEconomySchemeId ? `
+                            <div style="font-size: 0.75em; color: #999; margin-top: 4px;">（来自经济方案）</div>
+                            ` : ''}
+                            ${currentAttrsHtml.length > 0 ? `
+                            <div style="font-size: 0.8em; color: #51cf66; padding: 4px; background: #f0f9f4; border-radius: 4px;">
+                                当前加成：${currentAttrsHtml.join('、')}
+                            </div>
+                            ` : currentLevel === 0 ? `
+                            <div style="font-size: 0.8em; color: #999; padding: 4px;">当前加成：无</div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                
+                // 显示职业总加成
+                const jobTotalAttrsHtml = [];
+                if (jobTotalHp > 0) jobTotalAttrsHtml.push(`血量 +${jobTotalHp}`);
+                if (jobTotalAtk > 0) jobTotalAttrsHtml.push(`攻击 +${jobTotalAtk}`);
+                if (jobTotalDef > 0) jobTotalAttrsHtml.push(`防御 +${jobTotalDef}`);
+                
+                html += `
+                        <div style="margin-top: 10px; padding: 8px; background: #e8f5e9; border-radius: 6px; border: 1px solid #51cf66;">
+                            <div style="font-weight: 600; color: #2e7d32; font-size: 0.9em; margin-bottom: 4px;">职业总加成：</div>
+                            <div style="font-size: 0.85em; color: #2e7d32;">
+                                ${jobTotalAttrsHtml.length > 0 ? jobTotalAttrsHtml.join('、') : '无'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            panel.innerHTML = html;
+        }
+        
+        // 更新主配置装备强化等级
+        window.updateMainConfigEquipSlotLevel = function(jobId, typeId, value) {
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            const typeName = typeNames[typeId];
+            const level = Math.max(0, parseInt(value) || 0);
+            
+            if (!mainConfigEquipSlotLevels[jobId]) {
+                mainConfigEquipSlotLevels[jobId] = {};
+            }
+            mainConfigEquipSlotLevels[jobId][typeName] = level;
+            
+            // 重新应用所有角色的属性
+            characters.forEach(char => {
+                applyJobEquipmentStats(char);
+            });
+            
+            // 更新最终属性面板
+            updateFinalAttributesPanel();
+            
+            // 更新所有关卡的伤害信息
+            for (let stage = 1; stage <= 20; stage++) {
+                updateStageDamageInfo(stage);
+            }
+            
+            // 重新渲染装备强化面板（更新显示）
+            renderMainConfigEquipSlotEnhancePanel();
+        };
+        
+        // 渲染装备槽位强化玩法UI
+        function renderEquipSlotEnhanceGameplay(gameplay) {
+            if (!equipSlotLevelTable || equipSlotLevelTable.length === 0) {
+                return `
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 600; color: #333; font-size: 1em;">${gameplay.name}</div>
+                            <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        </div>
+                        <div style="color: #999; text-align: center; padding: 20px;">请先上传装备表（包含EquipSlotLevel页签）</div>
+                    </div>
+                `;
+            }
+            
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            const jobNames = { 1: '坦克', 2: '战士', 3: '射手', 4: '辅助' };
+            
+            let html = `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; min-width: 1000px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="font-weight: 600; color: #333; font-size: 1.1em;">${gameplay.name}</div>
+                        <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+            `;
+            
+            // 4个职业
+            for (let jobId = 1; jobId <= 4; jobId++) {
+                html += `
+                    <div style="padding: 15px; background: #f8f9ff; border-radius: 8px; border: 2px solid #e0e0e0;">
+                        <div style="font-weight: 600; color: #333; margin-bottom: 15px; text-align: center; font-size: 1em;">${jobNames[jobId]}</div>
+                `;
+                
+                // 4个部位
+                for (let typeId = 1; typeId <= 4; typeId++) {
+                    const typeName = typeNames[typeId];
+                    const currentLevel = equipSlotLevels[jobId] && equipSlotLevels[jobId][typeName] ? equipSlotLevels[jobId][typeName] : 0;
+                    const nextLevel = currentLevel + 1;
+                    
+                    // 获取当前等级的属性加成（不累加）
+                    const currentAttrs = getEquipSlotCurrentAttributes(jobId, typeId, currentLevel);
+                    const currentAttrsHtml = [];
+                    if (currentAttrs.hp > 0) currentAttrsHtml.push(`血量 +${currentAttrs.hp}`);
+                    if (currentAttrs.atk > 0) currentAttrsHtml.push(`攻击 +${currentAttrs.atk}`);
+                    if (currentAttrs.def > 0) currentAttrsHtml.push(`防御 +${currentAttrs.def}`);
+                    
+                    // 查找下一级的数据
+                    const nextLevelData = equipSlotLevelTable.find(row => 
+                        row.type === typeId && row.heroClasses === jobId && row.slotLevel === nextLevel
+                    );
+                    
+                    html += `
+                        <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <div style="font-weight: 600; color: #333; font-size: 0.95em; margin-bottom: 8px;">${typeName}部</div>
+                            <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
+                                当前等级：<span style="color: #667eea; font-weight: 600; font-size: 1em;">${currentLevel}</span>
+                            </div>
+                            ${currentAttrsHtml.length > 0 ? `
+                            <div style="font-size: 0.85em; color: #51cf66; margin-bottom: 8px; padding: 6px; background: #f0f9f4; border-radius: 4px;">
+                                <div style="font-weight: 600; margin-bottom: 3px;">当前加成：</div>
+                                <div>${currentAttrsHtml.join('、')}</div>
+                            </div>
+                            ` : currentLevel === 0 ? `
+                            <div style="font-size: 0.85em; color: #999; margin-bottom: 8px; padding: 6px; background: #f5f5f5; border-radius: 4px;">
+                                <div style="font-weight: 600; margin-bottom: 3px;">当前加成：</div>
+                                <div>无</div>
+                            </div>
+                            ` : ''}
+                    `;
+                    
+                    if (nextLevelData) {
+                        // 显示下一级需要的材料
+                        const costItemsHtml = nextLevelData.costItems.map(cost => {
+                            const resourceName = getResourceName(cost.resourceId) || cost.resourceId;
+                            const itemCount = getResourceCount(cost.resourceId);
+                            const hasEnough = itemCount >= cost.count;
+                            return `
+                                <div style="font-size: 0.85em; color: ${hasEnough ? '#51cf66' : '#ff6b6b'}; margin-bottom: 4px; padding: 3px 0;">
+                                    ${resourceName} x${cost.count} <span style="color: #666;">(拥有: ${itemCount})</span>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        // 显示下一级增加的属性
+                        const nextAttrs = nextLevelData.attribute;
+                        const nextAttrsHtml = [];
+                        if (nextAttrs.hp > 0) nextAttrsHtml.push(`血量 +${nextAttrs.hp}`);
+                        if (nextAttrs.atk > 0) nextAttrsHtml.push(`攻击 +${nextAttrs.atk}`);
+                        if (nextAttrs.def > 0) nextAttrsHtml.push(`防御 +${nextAttrs.def}`);
+                        
+                        const canUpgrade = nextLevelData.costItems.every(cost => {
+                            const itemCount = getResourceCount(cost.resourceId);
+                            return itemCount >= cost.count;
+                        });
+                        
+                        html += `
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 8px; padding: 6px; background: #f8f9ff; border-radius: 4px;">
+                                <div style="font-weight: 600; margin-bottom: 4px; color: #333;">升级需要：</div>
+                                ${costItemsHtml}
+                            </div>
+                            <div style="font-size: 0.85em; color: #667eea; margin-bottom: 8px; padding: 6px; background: #f0f4ff; border-radius: 4px;">
+                                <div style="font-weight: 600; margin-bottom: 3px;">下一级加成：</div>
+                                <div>${nextAttrsHtml.length > 0 ? nextAttrsHtml.join('、') : '无'}</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="upgradeEquipSlot(${jobId}, ${typeId})" style="width: 100%; padding: 6px 12px; font-size: 0.9em; font-weight: 600;" ${!canUpgrade ? 'disabled' : ''}>强化</button>
+                        `;
+                    } else {
+                        html += `
+                            <div style="font-size: 0.85em; color: #999; text-align: center; padding: 12px; background: #f5f5f5; border-radius: 4px;">已满级</div>
+                        `;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        // 强化装备槽位
+        window.upgradeEquipSlot = function(jobId, typeId) {
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            const typeName = typeNames[typeId];
+            const currentLevel = equipSlotLevels[jobId] && equipSlotLevels[jobId][typeName] ? equipSlotLevels[jobId][typeName] : 0;
+            const nextLevel = currentLevel + 1;
+            
+            // 查找下一级的数据
+            const nextLevelData = equipSlotLevelTable.find(row => 
+                row.type === typeId && row.heroClasses === jobId && row.slotLevel === nextLevel
+            );
+            
+            if (!nextLevelData) {
+                showMessage('已达到最大等级', 'error');
+                return;
+            }
+            
+            // 检查材料是否足够
+            for (const cost of nextLevelData.costItems) {
+                const itemCount = getResourceCount(cost.resourceId);
+                if (itemCount < cost.count) {
+                    const resourceName = getResourceName(cost.resourceId) || cost.resourceId;
+                    showMessage(`材料不足：需要${resourceName} x${cost.count}`, 'error');
+                    return;
+                }
+            }
+            
+            // 消耗材料
+            for (const cost of nextLevelData.costItems) {
+                const resourceIdStr = String(cost.resourceId);
+                // 核心资源：1001=金币, 1002=钻石, 1003=体力
+                if (resourceIdStr === '1001') {
+                    playerResources.gold = (playerResources.gold || 0) - cost.count;
+                    syncEconomyGoldDisplay();
+                } else if (resourceIdStr === '1002') {
+                    playerResources.diamond = (playerResources.diamond || 0) - cost.count;
+                    const diamondInput = document.getElementById('playerDiamond');
+                    if (diamondInput) diamondInput.value = playerResources.diamond;
+                } else if (resourceIdStr === '1003') {
+                    playerResources.currentStamina = (playerResources.currentStamina || 0) - cost.count;
+                    const staminaInput = document.getElementById('playerCurrentStamina');
+                    if (staminaInput) staminaInput.value = playerResources.currentStamina;
+                } else {
+                    // 其他资源从背包消耗
+                    const item = bagItems.find(i => i.resourceId === resourceIdStr);
+                    if (item) {
+                        item.count -= cost.count;
+                        if (item.count <= 0) {
+                            bagItems = bagItems.filter(i => i.resourceId !== resourceIdStr);
+                        }
+                    }
+                }
+            }
+            
+            // 升级
+            if (!equipSlotLevels[jobId]) equipSlotLevels[jobId] = {};
+            equipSlotLevels[jobId][typeName] = nextLevel;
+            
+            // 更新UI
+            renderBagItems();
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            
+            const attrs = nextLevelData.attribute;
+            const attrsText = [];
+            if (attrs.hp > 0) attrsText.push(`血量+${attrs.hp}`);
+            if (attrs.atk > 0) attrsText.push(`攻击+${attrs.atk}`);
+            if (attrs.def > 0) attrsText.push(`防御+${attrs.def}`);
+            
+            showMessage(`强化成功！${JOB_NAMES[jobId]}${typeName}部提升到${nextLevel}级（${attrsText.join('、')}）`, 'success');
+        };
+        
         // 执行普通资源消耗玩法
         window.executeResourceGameplay = function(gameplayId) {
             const gameplay = resourceConsumptionGameplayList.find(g => g.id === gameplayId);
             if (!gameplay) return;
             
-            const item = bagItems.find(i => i.name === gameplay.itemName);
+            // 查找背包物品（支持按resourceId或name查找）
+            let item = null;
+            if (gameplay.type === 'recruit') {
+                item = bagItems.find(i => i.resourceId === '1021' || i.name === gameplay.itemName);
+            } else {
+                item = bagItems.find(i => i.name === gameplay.itemName);
+            }
             if (!item || item.count < 1) {
                 showMessage(`背包中没有足够的${gameplay.itemName}！`, 'error');
                 return;
@@ -9752,7 +10976,11 @@
             
             item.count -= 1;
             if (item.count === 0) {
-                bagItems = bagItems.filter(i => i.name !== gameplay.itemName);
+                if (gameplay.type === 'recruit') {
+                    bagItems = bagItems.filter(i => i.resourceId !== '1021' && i.name !== gameplay.itemName);
+                } else {
+                    bagItems = bagItems.filter(i => i.name !== gameplay.itemName);
+                }
             }
             
             renderBagItems();
@@ -9763,43 +10991,105 @@
         
         // 添加物品到背包
         window.addItemToBag = function() {
-            const nameInput = document.getElementById('newItemName');
+            const resourceSelect = document.getElementById('newItemResourceSelect');
             const countInput = document.getElementById('newItemCount');
             
-            if (!nameInput || !countInput) return;
+            if (!resourceSelect || !countInput) return;
             
-            const name = nameInput.value.trim();
+            const resourceId = resourceSelect.value.trim();
             const count = parseInt(countInput.value) || 1;
             
-            if (!name) {
-                showMessage('请输入物品名称', 'error');
+            if (!resourceId) {
+                showMessage('请选择资源', 'error');
                 return;
             }
             
-            // 检查是否已存在
-            const existingItem = bagItems.find(item => item.name === name);
+            // 从下拉框获取资源名称
+            const selectedOption = resourceSelect.options[resourceSelect.selectedIndex];
+            const resourceName = selectedOption ? (selectedOption.getAttribute('data-name') || selectedOption.textContent.split(' - ')[1] || '') : '';
+            
+            if (!resourceName) {
+                showMessage('无法获取资源名称', 'error');
+                return;
+            }
+            
+            // 处理核心资源（1001=金币, 1002=钻石, 1003=体力）：直接更新玩家资源，不加入背包
+            if (resourceId === '1001') {
+                // 金币
+                playerResources.gold = (playerResources.gold || 0) + count;
+                const goldInput = document.getElementById('playerGold');
+                if (goldInput) goldInput.value = playerResources.gold;
+                savePlayerEconomyData();
+                showMessage(`已添加${count}个${resourceName}到玩家账号`, 'success');
+                resourceSelect.value = '';
+                countInput.value = '1';
+                return;
+            } else if (resourceId === '1002') {
+                // 钻石
+                playerResources.diamond = (playerResources.diamond || 0) + count;
+                const diamondInput = document.getElementById('playerDiamond');
+                if (diamondInput) diamondInput.value = playerResources.diamond;
+                savePlayerEconomyData();
+                showMessage(`已添加${count}个${resourceName}到玩家账号`, 'success');
+                resourceSelect.value = '';
+                countInput.value = '1';
+                return;
+            } else if (resourceId === '1003') {
+                // 体力
+                playerResources.currentStamina = (playerResources.currentStamina || 0) + count;
+                const staminaInput = document.getElementById('playerCurrentStamina');
+                if (staminaInput) staminaInput.value = playerResources.currentStamina;
+                savePlayerEconomyData();
+                showMessage(`已添加${count}个${resourceName}到玩家账号`, 'success');
+                resourceSelect.value = '';
+                countInput.value = '1';
+                return;
+            }
+            
+            // 其他资源：正常添加到背包
+            // 检查是否已存在（按资源id或名称匹配）
+            const existingItem = bagItems.find(item => item.resourceId === resourceId || item.name === resourceName);
             if (existingItem) {
                 existingItem.count += count;
+                // 更新资源id和名称（如果之前没有）
+                if (!existingItem.resourceId) existingItem.resourceId = resourceId;
+                if (!existingItem.name) existingItem.name = resourceName;
             } else {
                 bagItems.push({
                     id: Date.now(),
-                    name: name,
+                    resourceId: resourceId,
+                    name: resourceName,
                     count: count
                 });
             }
             
-            nameInput.value = '';
+            resourceSelect.value = '';
             countInput.value = '1';
             
             renderBagItems();
+            renderResourceGameplayList(); // 更新装备强化玩法显示（材料数量变化）
             savePlayerEconomyData();
-            showMessage(`物品"${name}"已添加到背包`, 'success');
+            showMessage(`物品"${resourceName}"已添加到背包`, 'success');
         };
+        
+        // 清理背包中的核心资源（1001=金币, 1002=钻石, 1003=体力）
+        function cleanupCoreResourcesFromBag() {
+            const beforeCount = bagItems.length;
+            bagItems = bagItems.filter(item => {
+                const resourceId = item.resourceId || '';
+                return resourceId !== '1001' && resourceId !== '1002' && resourceId !== '1003';
+            });
+            // 如果清理了物品，保存数据
+            if (bagItems.length !== beforeCount) {
+                savePlayerEconomyData();
+            }
+        }
         
         // 移除背包物品
         window.removeBagItem = function(itemId) {
             bagItems = bagItems.filter(item => item.id !== itemId);
             renderBagItems();
+            renderResourceGameplayList(); // 更新装备强化玩法显示（材料数量变化）
             savePlayerEconomyData();
             showMessage('物品已移除', 'success');
         };
@@ -9808,10 +11098,16 @@
         function renderBagItems() {
             const listEl = document.getElementById('bagItemsList');
             if (listEl) {
-                if (bagItems.length === 0) {
+                // 过滤掉核心资源（1001=金币, 1002=钻石, 1003=体力），这些资源不在背包中显示
+                const filteredItems = bagItems.filter(item => {
+                    const resourceId = item.resourceId || '';
+                    return resourceId !== '1001' && resourceId !== '1002' && resourceId !== '1003';
+                });
+                
+                if (filteredItems.length === 0) {
                     listEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">背包为空</div>';
                 } else {
-                    listEl.innerHTML = bagItems.map(item => `
+                    listEl.innerHTML = filteredItems.map(item => `
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 8px;">
                             <div>
                                 <div style="font-weight: 600; color: #333;">${item.name}</div>
@@ -9823,7 +11119,7 @@
                 }
             }
             // 背包物品变化时，更新招募角色功能的招募券数量及主线副本挑战按钮状态
-            renderResourceGameplayList();
+            renderResourceGameplayList(); // 更新装备强化玩法显示（材料数量变化）
             renderGameplayList();
         }
         
@@ -10251,6 +11547,7 @@
             if (goldInput) {
                 goldInput.addEventListener('change', function() {
                     playerResources.gold = parseInt(this.value) || 0;
+                    renderResourceGameplayList(); // 更新装备强化玩法显示（金币可能作为材料）
                     savePlayerEconomyData();
                 });
             }
@@ -10258,6 +11555,7 @@
             if (diamondInput) {
                 diamondInput.addEventListener('change', function() {
                     playerResources.diamond = parseInt(this.value) || 0;
+                    renderResourceGameplayList(); // 更新装备强化玩法显示（钻石可能作为材料）
                     savePlayerEconomyData();
                 });
             }
@@ -10354,11 +11652,44 @@
         window.toggleUseEconomySimulation = function() {
             const cb = document.getElementById('useEconomySimulationCheckbox');
             useEconomySimulation = !!(cb && cb.checked);
-            if (!useEconomySimulation) mainConfigEconomySchemeId = null;
+            if (!useEconomySimulation) {
+                mainConfigEconomySchemeId = null;
+                // 取消使用经济方案时，重置装备强化等级为0（或保持当前值，根据需求）
+                // 这里保持当前值，用户可以手动修改
+            } else if (mainConfigEconomySchemeId) {
+                // 如果已选择经济方案，重新加载装备强化数据
+                const schemes = loadEconomySchemesForMain();
+                const scheme = schemes.find(s => s.id === mainConfigEconomySchemeId);
+                if (scheme && scheme.equipSlotLevels) {
+                    mainConfigEquipSlotLevels = JSON.parse(JSON.stringify(scheme.equipSlotLevels));
+                    // 确保结构完整
+                    for (let jobId = 1; jobId <= 4; jobId++) {
+                        if (!mainConfigEquipSlotLevels[jobId]) mainConfigEquipSlotLevels[jobId] = {};
+                        const typeNames = ['头', '身', '手', '脚'];
+                        typeNames.forEach(typeName => {
+                            if (mainConfigEquipSlotLevels[jobId][typeName] == null) mainConfigEquipSlotLevels[jobId][typeName] = 0;
+                        });
+                    }
+                    
+                    // 重新应用所有角色的属性
+                    characters.forEach(char => {
+                        applyJobEquipmentStats(char);
+                    });
+                    
+                    // 更新最终属性面板
+                    updateFinalAttributesPanel();
+                    
+                    // 更新所有关卡的伤害信息
+                    for (let stage = 1; stage <= 20; stage++) {
+                        updateStageDamageInfo(stage);
+                    }
+                }
+            }
             updateMainConfigEconomySchemeSelect();
             updateAllCharacterHeroSelects();
             characters.forEach(c => updateCharacterHeroLevelSelect(c.id));
             updateJobEquipmentPanel();
+            renderMainConfigEquipSlotEnhancePanel(); // 刷新装备强化面板（更新禁用状态）
             if (typeof updatePlatformEconomyHeroDisplay === 'function') updatePlatformEconomyHeroDisplay();
             if (typeof updatePlatformAttributes === 'function') updatePlatformAttributes();
         };
@@ -10366,9 +11697,54 @@
         window.onMainConfigEconomySchemeChange = function() {
             const sel = document.getElementById('mainConfigEconomySchemeSelect');
             mainConfigEconomySchemeId = (sel && sel.value) || null;
+            
+            // 如果选择了经济方案，读取该方案的装备强化数据
+            if (mainConfigEconomySchemeId && useEconomySimulation) {
+                const schemes = loadEconomySchemesForMain();
+                const scheme = schemes.find(s => s.id === mainConfigEconomySchemeId);
+                if (scheme && scheme.equipSlotLevels) {
+                    // 将经济方案的装备强化数据应用到主配置
+                    mainConfigEquipSlotLevels = JSON.parse(JSON.stringify(scheme.equipSlotLevels));
+                    // 确保结构完整
+                    for (let jobId = 1; jobId <= 4; jobId++) {
+                        if (!mainConfigEquipSlotLevels[jobId]) mainConfigEquipSlotLevels[jobId] = {};
+                        const typeNames = ['头', '身', '手', '脚'];
+                        typeNames.forEach(typeName => {
+                            if (mainConfigEquipSlotLevels[jobId][typeName] == null) mainConfigEquipSlotLevels[jobId][typeName] = 0;
+                        });
+                    }
+                    
+                    // 重新应用所有角色的属性
+                    characters.forEach(char => {
+                        applyJobEquipmentStats(char);
+                    });
+                    
+                    // 更新最终属性面板
+                    updateFinalAttributesPanel();
+                    
+                    // 更新所有关卡的伤害信息
+                    for (let stage = 1; stage <= 20; stage++) {
+                        updateStageDamageInfo(stage);
+                    }
+                }
+            }
+            
             updateAllCharacterHeroSelects();
             characters.forEach(c => updateCharacterHeroLevelSelect(c.id));
             updateJobEquipmentPanel();
+            renderMainConfigEquipSlotEnhancePanel(); // 刷新装备强化面板（更新禁用状态）
+            
+            // 主配置中加载经济方案时执行一键上阵
+            if (mainConfigEconomySchemeId && useEconomySimulation) {
+                if (typeof autoDeployHeroes === 'function') {
+                    try {
+                        autoDeployHeroes();
+                    } catch (err) {
+                        console.warn('执行一键上阵失败:', err);
+                    }
+                }
+            }
+            
             if (typeof updatePlatformEconomyHeroDisplay === 'function') updatePlatformEconomyHeroDisplay();
             if (typeof updatePlatformAttributes === 'function') updatePlatformAttributes();
         };
@@ -10384,9 +11760,38 @@
         function refreshMainConfigFromEconomyScheme() {
             // 如果主配置正在使用经济方案，则刷新相关数据
             if (useEconomySimulation && mainConfigEconomySchemeId) {
+                const schemes = loadEconomySchemesForMain();
+                const scheme = schemes.find(s => s.id === mainConfigEconomySchemeId);
+                if (scheme && scheme.equipSlotLevels) {
+                    // 刷新装备强化数据
+                    mainConfigEquipSlotLevels = JSON.parse(JSON.stringify(scheme.equipSlotLevels));
+                    // 确保结构完整
+                    for (let jobId = 1; jobId <= 4; jobId++) {
+                        if (!mainConfigEquipSlotLevels[jobId]) mainConfigEquipSlotLevels[jobId] = {};
+                        const typeNames = ['头', '身', '手', '脚'];
+                        typeNames.forEach(typeName => {
+                            if (mainConfigEquipSlotLevels[jobId][typeName] == null) mainConfigEquipSlotLevels[jobId][typeName] = 0;
+                        });
+                    }
+                    
+                    // 重新应用所有角色的属性
+                    characters.forEach(char => {
+                        applyJobEquipmentStats(char);
+                    });
+                    
+                    // 更新最终属性面板
+                    updateFinalAttributesPanel();
+                    
+                    // 更新所有关卡的伤害信息
+                    for (let stage = 1; stage <= 20; stage++) {
+                        updateStageDamageInfo(stage);
+                    }
+                }
+                
                 updateAllCharacterHeroSelects();
                 characters.forEach(c => updateCharacterHeroLevelSelect(c.id));
                 updateJobEquipmentPanel();
+                renderMainConfigEquipSlotEnhancePanel(); // 刷新装备强化面板
             }
             if (typeof updatePlatformEconomyHeroDisplay === 'function') updatePlatformEconomyHeroDisplay();
             if (typeof updatePlatformAttributes === 'function') updatePlatformAttributes();
@@ -11488,6 +12893,37 @@
         }
 
         // 加载保存的装备表
+        // 加载保存的装备槽位强化表
+        function loadSavedEquipSlotLevelTable() {
+            try {
+                const saved = localStorage.getItem(EQUIP_SLOT_LEVEL_STORAGE_KEY);
+                if (saved) {
+                    equipSlotLevelTable = JSON.parse(saved);
+                    console.log('从本地加载装备槽位强化表，共', equipSlotLevelTable.length, '条记录');
+                    
+                    // 如果已加载强化表，检查并添加装备槽位强化玩法
+                    if (equipSlotLevelTable && equipSlotLevelTable.length > 0) {
+                        const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+                        if (!hasEquipSlotEnhance) {
+                            const maxId = resourceConsumptionGameplayList.length > 0 
+                                ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                                : 0;
+                            resourceConsumptionGameplayList.push({
+                                id: maxId + 1,
+                                name: '装备槽位强化',
+                                itemName: '',
+                                type: 'equipSlotEnhance'
+                            });
+                            savePlayerEconomyData();
+                            console.log('已自动添加装备槽位强化玩法');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('加载保存的装备槽位强化表失败:', error);
+            }
+        }
+        
         function loadSavedEquipmentTable() {
             try {
                 const saved = localStorage.getItem(EQUIPMENT_STORAGE_KEY);
@@ -11624,11 +13060,13 @@
             // 加载保存的数据（先从本地加载，然后尝试从共享存储同步）
             loadSavedCharacterEquipment();
             loadSavedEquipmentTable();
+            loadSavedEquipSlotLevelTable();
             loadSavedHeroTable();
             loadSavedMonsterTable();
             loadSavedUpgradeTable();
             loadSavedRecruitInfoTable();
             loadSavedAccountLevelTable();
+            loadSavedResourceItemTable();
 
             // 如果配置了共享存储，自动尝试同步（静默，不显示错误）
             if (sharedGistId) {
@@ -11662,6 +13100,9 @@
             
             // 初始化车辆属性配置显示
             updateVehicleAttributes();
+            
+            // 渲染主配置装备强化面板
+            renderMainConfigEquipSlotEnhancePanel();
             
             // 渲染方案列表
             renderSchemeList();
