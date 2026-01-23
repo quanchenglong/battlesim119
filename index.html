@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.6';
+        const VERSION = '2.4.7';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -6431,8 +6431,19 @@
             const timeStep = 0.01; // 每次步进0.01秒
             const maxTime = 600; // 最大战斗时间600秒（10分钟）
             let lastSummaryTime = 0; // 上次输出摘要的时间
+            let iterationCount = 0; // 迭代计数器，防止无限循环
+            const maxIterations = Math.ceil(maxTime / timeStep) + 10000; // 最大迭代次数（加一些余量）
             
             while (battleState.isRunning && battleState.elapsedTime < maxTime) {
+                iterationCount++;
+                // 防止无限循环的保护措施
+                if (iterationCount > maxIterations) {
+                    console.error('快速战斗循环超过最大迭代次数，强制退出');
+                    battleState.isRunning = false;
+                    noWasteBattleState.isRunning = false;
+                    addLog(`<span style="color: #ff6b6b; font-weight: bold;">警告：战斗循环超过最大迭代次数，强制结束</span>`);
+                    break;
+                }
                 // 更新经过时间
                 battleState.elapsedTime += timeStep;
                 noWasteBattleState.elapsedTime = battleState.elapsedTime;
@@ -6442,17 +6453,33 @@
                 // 刷新怪物（两种模式同时刷新，快速模式下不输出日志）
                 if (currentTime >= battleState.nextSpawnTime) {
                     // 快速模式下不输出怪物出现日志
-                    const oldLogLength = document.getElementById('battleLog').children.length;
+                    const log = document.getElementById('battleLog');
+                    const oldLogLength = log ? log.children.length : 0;
                     spawnMonster();
                     spawnMonsterNoWaste();
                     // 移除刚才添加的日志（如果有）
-                    const log = document.getElementById('battleLog');
-                    while (log.children.length > oldLogLength) {
-                        log.removeChild(log.lastChild);
+                    if (log) {
+                        let removedCount = 0;
+                        const maxRemovals = 100; // 防止无限循环
+                        while (log.children.length > oldLogLength && removedCount < maxRemovals) {
+                            if (log.lastChild) {
+                                log.removeChild(log.lastChild);
+                                removedCount++;
+                            } else {
+                                break;
+                            }
+                        }
                     }
                     const spawnInterval = 1000 / monsterConfig.spawnRate;
-                    battleState.nextSpawnTime = currentTime + spawnInterval;
-                    noWasteBattleState.nextSpawnTime = battleState.nextSpawnTime;
+                    if (spawnInterval > 0 && !isNaN(spawnInterval) && isFinite(spawnInterval)) {
+                        battleState.nextSpawnTime = currentTime + spawnInterval;
+                        noWasteBattleState.nextSpawnTime = battleState.nextSpawnTime;
+                    } else {
+                        // 防止spawnInterval无效导致无限循环
+                        console.error('无效的spawnInterval:', spawnInterval, 'monsterConfig.spawnRate:', monsterConfig.spawnRate);
+                        battleState.nextSpawnTime = currentTime + 1000; // 默认1秒
+                        noWasteBattleState.nextSpawnTime = battleState.nextSpawnTime;
+                    }
                 }
 
                 // 角色攻击（正常模式，快速模式下不输出详细日志）
@@ -6463,16 +6490,21 @@
 
                         if (timeSinceLastAttack >= attackInterval) {
                             // 快速模式下，不输出每次攻击的详细日志
-                            const oldLogLength = document.getElementById('battleLog').children.length;
+                            const log = document.getElementById('battleLog');
+                            const oldLogLength = log ? log.children.length : 0;
                             characterAttack(char);
                             // 移除详细攻击日志，只保留怪物死亡等重要事件
-                            const log = document.getElementById('battleLog');
-                            while (log.children.length > oldLogLength) {
-                                const lastEntry = log.lastChild;
-                                if (lastEntry && !lastEntry.innerHTML.includes('被击败') && !lastEntry.innerHTML.includes('阵亡')) {
-                                    log.removeChild(lastEntry);
-                                } else {
-                                    break;
+                            if (log) {
+                                let removedCount = 0;
+                                const maxRemovals = 100; // 防止无限循环
+                                while (log.children.length > oldLogLength && removedCount < maxRemovals) {
+                                    const lastEntry = log.lastChild;
+                                    if (lastEntry && !lastEntry.innerHTML.includes('被击败') && !lastEntry.innerHTML.includes('阵亡')) {
+                                        log.removeChild(lastEntry);
+                                        removedCount++;
+                                    } else {
+                                        break;
+                                    }
                                 }
                             }
                             char.lastAttackTime = currentTime;
@@ -6547,16 +6579,21 @@
 
                         if (timeSinceLastAttack >= attackInterval && battleState.characters.some(c => c.isAlive)) {
                             // 快速模式下，不输出每次攻击的详细日志
-                            const oldLogLength = document.getElementById('battleLog').children.length;
+                            const log = document.getElementById('battleLog');
+                            const oldLogLength = log ? log.children.length : 0;
                             monsterAttack(monster);
                             // 移除详细攻击日志，只保留角色死亡等重要事件
-                            const log = document.getElementById('battleLog');
-                            while (log.children.length > oldLogLength) {
-                                const lastEntry = log.lastChild;
-                                if (lastEntry && !lastEntry.innerHTML.includes('阵亡') && !lastEntry.innerHTML.includes('被击败')) {
-                                    log.removeChild(lastEntry);
-                                } else {
-                                    break;
+                            if (log) {
+                                let removedCount = 0;
+                                const maxRemovals = 100; // 防止无限循环
+                                while (log.children.length > oldLogLength && removedCount < maxRemovals) {
+                                    const lastEntry = log.lastChild;
+                                    if (lastEntry && !lastEntry.innerHTML.includes('阵亡') && !lastEntry.innerHTML.includes('被击败')) {
+                                        log.removeChild(lastEntry);
+                                        removedCount++;
+                                    } else {
+                                        break;
+                                    }
                                 }
                             }
                             monster.lastAttackTime = currentTime;
