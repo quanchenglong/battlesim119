@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.7';
+        const VERSION = '2.4.8';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -4018,11 +4018,23 @@
             ['head', 'body', 'hand', 'foot'].forEach(type => {
                 const equipmentId = jobEquipment[type];
                 if (equipmentId) {
-                    const equipment = equipmentTable.find(eq => eq.id === equipmentId);
-                    if (equipment) {
-                        totalHp += equipment.hp || 0;
-                        totalAtk += equipment.atk || 0;
-                        totalDef += equipment.def || 0;
+                    // 添加保护：限制查找次数，防止equipmentTable过大导致卡死
+                    let found = false;
+                    const maxSearch = Math.min(equipmentTable.length, 50000); // 最多搜索50000件装备
+                    for (let i = 0; i < maxSearch && !found; i++) {
+                        const eq = equipmentTable[i];
+                        if (eq && (eq.id === equipmentId || String(eq.id) === String(equipmentId))) {
+                            // 确保属性值是有效数字，防止NaN或Infinity导致计算问题
+                            const hp = parseFloat(eq.hp) || 0;
+                            const atk = parseFloat(eq.atk) || 0;
+                            const def = parseFloat(eq.def) || 0;
+                            if (isFinite(hp) && isFinite(atk) && isFinite(def)) {
+                                totalHp += hp;
+                                totalAtk += atk;
+                                totalDef += def;
+                            }
+                            found = true;
+                        }
                     }
                 }
             });
@@ -4039,15 +4051,21 @@
                     const typeName = typeNames[typeId];
                     const level = mainConfigEquipSlotLevels[jobId][typeName] || 0;
                     
-                    if (level > 0) {
+                    if (level > 0 && level < 10000) { // 防止异常大的等级值导致性能问题
                         // 只取当前等级的属性加成（不累加之前等级）
-                        const levelData = equipSlotLevelTable.find(row => 
-                            row.type === typeId && row.heroClasses === jobId && row.slotLevel === level
-                        );
-                        if (levelData && levelData.attribute) {
-                            enhanceHp += levelData.attribute.hp || 0;
-                            enhanceAtk += levelData.attribute.atk || 0;
-                            enhanceDef += levelData.attribute.def || 0;
+                        // 添加保护：限制查找次数，防止equipSlotLevelTable过大导致卡死
+                        let found = false;
+                        const maxSearch = Math.min(equipSlotLevelTable.length, 10000); // 最多搜索10000条
+                        for (let i = 0; i < maxSearch && !found; i++) {
+                            const row = equipSlotLevelTable[i];
+                            if (row && row.type === typeId && row.heroClasses === jobId && row.slotLevel === level) {
+                                if (row.attribute) {
+                                    enhanceHp += (row.attribute.hp || 0);
+                                    enhanceAtk += (row.attribute.atk || 0);
+                                    enhanceDef += (row.attribute.def || 0);
+                                }
+                                found = true;
+                            }
                         }
                     }
                 });
@@ -4095,8 +4113,9 @@
                 char.finalHealRate = 0;
             }
             
-            // 更新最终属性面板
-            updateFinalAttributesPanel();
+            // 注意：不要在applyJobEquipmentStats中调用updateFinalAttributesPanel
+            // 这会导致递归调用，因为updateFinalAttributesPanel会调用applyJobEquipmentStats
+            // updateFinalAttributesPanel(); // 已移除，避免递归
         }
 
         // 从经济方案或输入框同步平台英雄数量/等级和到 platformConfig（用于加成计算）
