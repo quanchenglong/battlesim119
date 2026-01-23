@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.8';
+        const VERSION = '2.4.9';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -5495,6 +5495,25 @@
                 return;
             }
             
+            // 检查角色1死亡后300秒是否判定为胜利
+            if (battleState.char1DeadAfter300sWin) {
+                // 如果角色1死亡后持续300秒战斗未结束，判定为胜利
+                if (char1 && !char1.isAlive && char1.deathTime !== null && char1.deathTime !== 'never') {
+                    char1DeathTime = char1.deathTime;
+                    const timeSinceChar1Death = battleState.elapsedTime - char1DeathTime;
+                    deathTimeDisplay = `死亡时间: ${formatTime(char1DeathTime)}，之后持续战斗${formatTime(timeSinceChar1Death)}`;
+                    const multiplier = (char1DeathTime / 50).toFixed(2);
+                    multiplierDisplay = `倍率: ${multiplier}x`;
+                    resultDiv.innerHTML = `✓ 可通关（虽然坦克死了，但是其他角色更肉）<br><span style="font-size: 0.85em; color: #666;">${deathTimeDisplay}，${multiplierDisplay}</span>`;
+                    resultDiv.style.color = '#51cf66';
+                    stageCard.style.background = '#e8f5e9';
+                    stageCard.style.borderColor = '#51cf66';
+                    // 清空当前挑战关卡标记
+                    window.currentChallengeStage = undefined;
+                    return;
+                }
+            }
+            
             // 如果角色1死亡，获取其死亡时间
             if (char1 && !char1.isAlive) {
                 // 使用记录的死亡时间，如果没有则使用firstCharacterDeathTime（如果角色1是第一个死亡的）
@@ -6399,7 +6418,8 @@
                 nextSpawnTime: 0,
                 monsterIdCounter: 0,
                 char1NeverDies: false, // 标记角色1是否"几乎不会死"（超过200秒仍存活）
-                firstCharacterDeathTime: null // 第一个角色死亡时间
+                firstCharacterDeathTime: null, // 第一个角色死亡时间
+                char1DeadAfter300sWin: false // 标记角色1死亡后300秒是否判定为胜利
             };
             
             // 重置无浪费模式战斗状态
@@ -6655,6 +6675,18 @@
                     noWasteBattleState.isRunning = false;
                     addLog(`<span style="color: #51cf66; font-weight: bold;">战斗时间超过200秒，角色1仍存活，判定为"几乎不会死"</span>`);
                     break;
+                }
+
+                // 检查角色1死亡后300秒限制：如果角色1已死亡，且从死亡到现在已过300秒，判定为胜利
+                if (char1 && !char1.isAlive && char1.deathTime !== null && char1.deathTime !== 'never') {
+                    const timeSinceChar1Death = battleState.elapsedTime - char1.deathTime;
+                    if (timeSinceChar1Death >= 300) {
+                        battleState.char1DeadAfter300sWin = true;
+                        battleState.isRunning = false;
+                        noWasteBattleState.isRunning = false;
+                        addLog(`<span style="color: #51cf66; font-weight: bold;">虽然坦克死了，但是其他角色更肉！角色1死亡后已持续战斗${formatTime(timeSinceChar1Death)}，判定为胜利</span>`);
+                        break;
+                    }
                 }
 
                 // 检查战斗结束
