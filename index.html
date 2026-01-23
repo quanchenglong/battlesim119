@@ -1744,7 +1744,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.1';
+        const VERSION = '2.4.2';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -3401,6 +3401,7 @@
 
                 // 计算当前职业的总装备加成
                 let totalHpBonus = 0, totalAtkBonus = 0, totalDefBonus = 0;
+                let maxQuality = 1; // 用于确定背景颜色
                 ['head', 'body', 'hand', 'foot'].forEach(type => {
                     const equipmentId = jobEquipment[type];
                     if (equipmentId) {
@@ -3409,12 +3410,15 @@
                             totalHpBonus += equipment.hp || 0;
                             totalAtkBonus += equipment.atk || 0;
                             totalDefBonus += equipment.def || 0;
+                            const eqQuality = getEquipmentQuality(equipmentId);
+                            if (eqQuality > maxQuality) maxQuality = eqQuality;
                         }
                     }
                 });
                 
+                const qualityBg = getQualityBgColor(maxQuality);
                 return `
-                    <div style="background: white; border-radius: 12px; padding: 15px; border: 2px solid #e0e0e0;">
+                    <div style="background: ${qualityBg.bg}; border-radius: 12px; padding: 15px; border: 2px solid ${qualityBg.border};">
                         <div style="font-weight: 600; font-size: 1.1em; color: #667eea; margin-bottom: 15px;">${jobName}</div>
                         ${Object.keys(EQUIPMENT_TYPES).map(typeKey => {
                             const typeName = EQUIPMENT_TYPES[typeKey];
@@ -3786,8 +3790,11 @@
                 const finalAtk = char.attack || baseAtk;
                 const finalDef = char.defense || baseDef;
                 
+                const heroQuality = getCharacterHeroQuality(char.id);
+                const qualityBg = getQualityBgColor(heroQuality);
+                
                 return `
-                    <div style="background: white; border-radius: 12px; padding: 15px; border: 2px solid #e0e0e0;">
+                    <div style="background: ${qualityBg.bg}; border-radius: 12px; padding: 15px; border: 2px solid ${qualityBg.border};">
                         <div style="font-weight: 600; font-size: 1.1em; color: #667eea; margin-bottom: 12px;">
                             ${char.name} <span style="font-size: 0.85em; color: #999; font-weight: 400;">[${JOB_NAMES[char.job]}]</span>
                         </div>
@@ -5068,8 +5075,11 @@
                 console.error('characters数组为空');
                 return;
             }
-            grid.innerHTML = characters.map(char => `
-                <div class="character-card" data-char-id="${char.id}">
+            grid.innerHTML = characters.map(char => {
+                const heroQuality = getCharacterHeroQuality(char.id);
+                const qualityBg = getQualityBgColor(heroQuality);
+                return `
+                <div class="character-card" data-char-id="${char.id}" style="background: ${qualityBg.bg}; border-color: ${qualityBg.border};">
                     <div class="character-header">
                         <div class="character-name">${char.name}</div>
                         <span class="character-job" style="font-size: 0.85em; color: #667eea; font-weight: 600; margin-left: 8px;">[${JOB_NAMES[char.job]}]</span>
@@ -5122,7 +5132,8 @@
                         <div class="hp-fill" id="hp-bar-${char.id}" style="width: 100%;"></div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             // 更新所有角色的英雄选择下拉框
             updateAllCharacterHeroSelects();
@@ -5310,6 +5321,18 @@
                     levelSelect.innerHTML = '<option value="">请先选择英雄</option>';
                 }
             }
+            
+            // 更新角色卡片背景颜色
+            const charCard = document.querySelector(`.character-card[data-char-id="${charId}"]`);
+            if (charCard) {
+                const heroQuality = getCharacterHeroQuality(charId);
+                const qualityBg = getQualityBgColor(heroQuality);
+                charCard.style.background = qualityBg.bg;
+                charCard.style.borderColor = qualityBg.border;
+            }
+            
+            // 更新最终属性面板背景颜色
+            updateFinalAttributesPanel();
         }
 
         // 更新角色选择的英雄等级并自动更新属性（全局函数）
@@ -8037,9 +8060,54 @@
         }
 
         // 显示消息
+        // 获取品质颜色（用于文本显示）
+        function getQualityTextColor(quality) {
+            const qualityColors = {
+                1: '#666',      // 白色
+                2: '#2b8a3e',   // 绿色
+                3: '#1864ab',   // 蓝色
+                4: '#5f3dc4',   // 紫色
+                5: '#d9480f',   // 橙色
+                6: '#c92a2a'    // 红色
+            };
+            return qualityColors[quality] || qualityColors[1];
+        }
+
+        // 获取品质背景颜色（用于背景显示）
+        function getQualityBgColor(quality) {
+            const qualityColors = {
+                1: { bg: '#f5f5f5', border: '#d0d0d0' },      // 白色
+                2: { bg: '#f0f9f4', border: '#51cf66' },       // 绿色
+                3: { bg: '#e7f5ff', border: '#339af0' },       // 蓝色
+                4: { bg: '#f3f0ff', border: '#845ef7' },       // 紫色
+                5: { bg: '#fff4e6', border: '#ff922b' },       // 橙色
+                6: { bg: '#ffe3e3', border: '#ff6b6b' }        // 红色
+            };
+            return qualityColors[quality] || qualityColors[1];
+        }
+
+        // 获取角色英雄品质
+        function getCharacterHeroQuality(charId) {
+            const char = characters.find(c => c.id === charId);
+            if (!char || !char.selectedHeroId) return 1; // 默认白色品质
+            
+            const hero = heroTable.find(h => String(h.id) === String(char.selectedHeroId));
+            if (!hero) return 1;
+            
+            return parseInt(hero.quality) || 1;
+        }
+
+        // 获取装备品质
+        function getEquipmentQuality(equipmentId) {
+            if (!equipmentId) return 1;
+            const equipment = equipmentTable.find(eq => String(eq.id) === String(equipmentId));
+            if (!equipment) return 1;
+            return parseInt(equipment.quality) || 1;
+        }
+
         function showMessage(text, type) {
             const msg = document.getElementById('message');
-            msg.textContent = text;
+            msg.innerHTML = text;
             msg.className = `message show ${type}`;
             setTimeout(() => {
                 hideMessage();
@@ -9065,7 +9133,11 @@
                     if (pick) {
                         const id = String(pick.id);
                         if (!playerEquipment.includes(id)) playerEquipment.push(id);
-                        dropped.push(`${pick.namecn || id}(${qualityNames[quality]})`);
+                        dropped.push({
+                            name: pick.namecn || id,
+                            quality: quality,
+                            qualityName: qualityNames[quality]
+                        });
                     }
                 }
             }
@@ -9108,7 +9180,11 @@
                 
                 if (result.dropped.length > 0) {
                     renderPlayerOwnedEquipment();
-                    showMessage(`获得装备：${result.dropped.join('、')}`, 'success');
+                    const equipmentList = result.dropped.map(eq => {
+                        const color = getQualityTextColor(eq.quality);
+                        return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
+                    }).join('、');
+                    showMessage(`获得装备：${equipmentList}`, 'success');
                 }
                 
                 renderGameplayList();
@@ -9164,7 +9240,15 @@
                 renderGameplayList();
                 savePlayerEconomyData();
                 
-                const msg = `已执行10次，消耗${needed}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${allDropped.length > 0 ? `，获得${allDropped.length}件装备` : ''}`;
+                let equipmentMsg = '';
+                if (allDropped.length > 0) {
+                    const equipmentList = allDropped.map(eq => {
+                        const color = getQualityTextColor(eq.quality);
+                        return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
+                    }).join('、');
+                    equipmentMsg = `，获得装备：${equipmentList}`;
+                }
+                const msg = `已执行10次，消耗${needed}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${equipmentMsg}`;
                 showMessage(msg, 'success');
             } else {
                 showMessage('该功能仅支持主线副本挑战', 'error');
@@ -9217,7 +9301,15 @@
                 renderGameplayList();
                 savePlayerEconomyData();
                 
-                const msg = `已执行${count}次，消耗${count * gameplay.staminaCost}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${allDropped.length > 0 ? `，获得${allDropped.length}件装备` : ''}`;
+                let equipmentMsg = '';
+                if (allDropped.length > 0) {
+                    const equipmentList = allDropped.map(eq => {
+                        const color = getQualityTextColor(eq.quality);
+                        return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
+                    }).join('、');
+                    equipmentMsg = `，获得装备：${equipmentList}`;
+                }
+                const msg = `已执行${count}次，消耗${count * gameplay.staminaCost}点体力，获得${totalExp}经验${totalLevelUps > 0 ? `，升级${totalLevelUps}次` : ''}${equipmentMsg}`;
                 showMessage(msg, 'success');
             } else {
                 showMessage('该功能仅支持主线副本挑战', 'error');
@@ -9269,7 +9361,16 @@
                                 <div style="font-size: 0.85em; color: #333;">
                                     ${lastMainDungeonGains.exp > 0 ? `<div>经验：+${lastMainDungeonGains.exp}</div>` : ''}
                                     ${lastMainDungeonGains.levelUp ? `<div style="color: #51cf66; font-weight: 600;">等级提升：${playerAccount.level}</div>` : ''}
-                                    ${lastMainDungeonGains.equipment.length > 0 ? `<div>装备：${lastMainDungeonGains.equipment.join('、')}</div>` : ''}
+                                    ${lastMainDungeonGains.equipment.length > 0 ? `<div>装备：${lastMainDungeonGains.equipment.map(eq => {
+                                        if (typeof eq === 'string') {
+                                            // 兼容旧格式（字符串）
+                                            return eq;
+                                        } else {
+                                            // 新格式（对象）
+                                            const color = getQualityTextColor(eq.quality);
+                                            return `<span style="color: ${color}; font-weight: 600;">${eq.name}</span><span style="color: ${color}; font-size: 0.9em;">(${eq.qualityName})</span>`;
+                                        }
+                                    }).join('、')}</div>` : ''}
                                 </div>
                             </div>
                             ` : ''}
@@ -9563,9 +9664,10 @@
                                     ${lastRecruitResult.heroes.map(h => {
                                         const qualityNames = { 1: '白', 2: '绿', 3: '蓝', 4: '紫', 5: '橙', 6: '红' };
                                         const qualityName = qualityNames[h.quality] || '白';
+                                        const qualityColor = getQualityTextColor(h.quality);
                                         return `<div style="font-size: 0.85em; color: #333; margin-bottom: 3px;">
-                                            <span style="font-weight: 600; color: #667eea;">${h.name}</span> 
-                                            <span style="color: #999; font-size: 0.8em;">[${qualityName}]</span>
+                                            <span style="font-weight: 600; color: ${qualityColor};">${h.name}</span> 
+                                            <span style="color: ${qualityColor}; font-size: 0.8em;">[${qualityName}]</span>
                                             <span style="color: #666;"> × ${h.count}</span>
                                         </div>`;
                                     }).join('')}
