@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.9';
+        const VERSION = '2.4.10';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -5495,16 +5495,15 @@
                 return;
             }
             
-            // 检查角色1死亡后300秒是否判定为胜利
+            // 检查角色1死亡后对局时长200秒是否判定为胜利
             if (battleState.char1DeadAfter300sWin) {
-                // 如果角色1死亡后持续300秒战斗未结束，判定为胜利
+                // 如果对局时长达到200秒且角色1已死亡，判定为胜利
                 if (char1 && !char1.isAlive && char1.deathTime !== null && char1.deathTime !== 'never') {
                     char1DeathTime = char1.deathTime;
-                    const timeSinceChar1Death = battleState.elapsedTime - char1DeathTime;
-                    deathTimeDisplay = `死亡时间: ${formatTime(char1DeathTime)}，之后持续战斗${formatTime(timeSinceChar1Death)}`;
+                    deathTimeDisplay = `死亡时间: ${formatTime(char1DeathTime)}，对局时长: ${formatTime(battleState.elapsedTime)}`;
                     const multiplier = (char1DeathTime / 50).toFixed(2);
                     multiplierDisplay = `倍率: ${multiplier}x`;
-                    resultDiv.innerHTML = `✓ 可通关（虽然坦克死了，但是其他角色更肉）<br><span style="font-size: 0.85em; color: #666;">${deathTimeDisplay}，${multiplierDisplay}</span>`;
+                    resultDiv.innerHTML = `✓ 可通关（虽然坦克死了，但是其他角色几乎不会死）<br><span style="font-size: 0.85em; color: #666;">${deathTimeDisplay}，${multiplierDisplay}</span>`;
                     resultDiv.style.color = '#51cf66';
                     stageCard.style.background = '#e8f5e9';
                     stageCard.style.borderColor = '#51cf66';
@@ -6677,16 +6676,13 @@
                     break;
                 }
 
-                // 检查角色1死亡后300秒限制：如果角色1已死亡，且从死亡到现在已过300秒，判定为胜利
-                if (char1 && !char1.isAlive && char1.deathTime !== null && char1.deathTime !== 'never') {
-                    const timeSinceChar1Death = battleState.elapsedTime - char1.deathTime;
-                    if (timeSinceChar1Death >= 300) {
-                        battleState.char1DeadAfter300sWin = true;
-                        battleState.isRunning = false;
-                        noWasteBattleState.isRunning = false;
-                        addLog(`<span style="color: #51cf66; font-weight: bold;">虽然坦克死了，但是其他角色更肉！角色1死亡后已持续战斗${formatTime(timeSinceChar1Death)}，判定为胜利</span>`);
-                        break;
-                    }
+                // 检查200秒限制：如果对局时长达到200秒且角色1已死亡，立即判定为胜利
+                if (battleState.elapsedTime >= 200 && char1 && !char1.isAlive && char1.deathTime !== null && char1.deathTime !== 'never') {
+                    battleState.char1DeadAfter300sWin = true;
+                    battleState.isRunning = false;
+                    noWasteBattleState.isRunning = false;
+                    addLog(`<span style="color: #51cf66; font-weight: bold;">对局时长达到200秒，虽然坦克死了，但是其他角色几乎不会死！判定为胜利</span>`);
+                    break;
                 }
 
                 // 检查战斗结束
