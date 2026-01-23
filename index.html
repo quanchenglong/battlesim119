@@ -1061,7 +1061,9 @@
                         <div style="margin-bottom: 10px; font-size: 0.85em; color: #555; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
                             <span>怪物生成后前</span>
                             <input type="number" id="monsterAttackDelayInput" min="0" max="60" step="0.5" value="3" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
-                            <span>秒不攻击；角色攻击频率</span>
+                            <span>秒不攻击；怪物生成后前</span>
+                            <input type="number" id="monsterInvincibleTimeInput" min="0" max="60" step="0.1" value="1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
+                            <span>秒不可被攻击；角色攻击频率</span>
                             <input type="number" id="characterAttackIntervalInput" min="0.01" max="5" step="0.01" value="0.1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
                             <span>秒/次，伤害系数</span>
                             <input type="number" id="characterDamageScaleInput" min="0.01" max="10" step="0.01" value="0.1" style="width: 70px; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.85em; text-align: center;" />
@@ -1905,6 +1907,8 @@
 
         // 怪物生成后开始攻击前的延迟时间（秒），默认3秒，可在界面中配置
         let monsterAttackDelay = 3;
+        // 怪物生成后不可被攻击的时间（秒），默认1秒，可在界面中配置
+        let monsterInvincibleTime = 1;
         // 角色攻击频率（秒/次），默认0.1秒攻击一次；以及每次攻击伤害倍率，默认0.1倍，可在界面中配置
         let characterAttackInterval = 0.1;
         let characterDamageScale = 0.1;
@@ -4548,13 +4552,18 @@
             const delayInput = document.getElementById('monsterAttackDelayInput');
             const latestMonsterAttackDelay = delayInput ? (parseFloat(delayInput.value) || 3) : 3;
             
+            // 读取怪物不可被攻击时间配置
+            const invincibleInput = document.getElementById('monsterInvincibleTimeInput');
+            const latestMonsterInvincibleTime = invincibleInput ? (parseFloat(invincibleInput.value) || 1) : 1;
+            
             const schemeData = {
                 id: currentBattleWaveSchemeId || Date.now().toString(),
                 name: name,
                 saveTime: new Date().toISOString(),
                 battleWaveData: latestBattleWaveData,
                 strongholdRewards: latestStrongholdRewards,
-                monsterAttackDelay: latestMonsterAttackDelay
+                monsterAttackDelay: latestMonsterAttackDelay,
+                monsterInvincibleTime: latestMonsterInvincibleTime
             };
             
             // 如果已存在，更新；否则添加
@@ -4640,6 +4649,15 @@
                 const delayInput = document.getElementById('monsterAttackDelayInput');
                 if (delayInput) {
                     delayInput.value = monsterAttackDelay;
+                }
+            }
+            
+            // 加载怪物不可被攻击时间配置
+            if (scheme.monsterInvincibleTime !== undefined) {
+                monsterInvincibleTime = parseFloat(scheme.monsterInvincibleTime) || 1;
+                const invincibleInput = document.getElementById('monsterInvincibleTimeInput');
+                if (invincibleInput) {
+                    invincibleInput.value = monsterInvincibleTime;
                 }
             }
             
@@ -6915,6 +6933,15 @@
                 monsterAttackDelay = 3; // 安全兜底
             }
 
+            // 读取怪物不可被攻击时间配置（秒）
+            const invincibleInput = document.getElementById('monsterInvincibleTimeInput');
+            if (invincibleInput) {
+                const val = parseFloat(invincibleInput.value);
+                monsterInvincibleTime = isNaN(val) || val < 0 ? 1 : val;
+            } else {
+                monsterInvincibleTime = 1; // 默认1秒
+            }
+
             // 读取角色攻击频率（秒/次）和伤害倍率配置
             const atkIntervalInput = document.getElementById('characterAttackIntervalInput');
             if (atkIntervalInput) {
@@ -7536,8 +7563,16 @@
         function characterAttackWave(character) {
             if (waveBattleState.monsters.length === 0) return;
 
-            // 攻击第一个存活的怪物
-            const target = waveBattleState.monsters.find(m => m.isAlive);
+            // 攻击第一个存活的怪物（且已经过了不可被攻击时间）
+            const target = waveBattleState.monsters.find(m => {
+                if (!m.isAlive) return false;
+                // 检查怪物是否已经过了不可被攻击的时间段
+                if (m.spawnGameTime !== undefined) {
+                    const timeSinceSpawn = waveBattleState.elapsedTime - m.spawnGameTime;
+                    return timeSinceSpawn >= monsterInvincibleTime;
+                }
+                return true; // 如果没有生成时间记录，允许攻击（兼容旧数据）
+            });
             if (!target) return;
 
             // 基础伤害计算
