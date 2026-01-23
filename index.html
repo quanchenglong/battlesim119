@@ -12083,6 +12083,46 @@
                     console.log('共享存储中没有玩家经济模拟方案（可能是旧版本数据）');
                 }
                 
+                // 同步物品表
+                if (sharedData.resourceItemTable && Array.isArray(sharedData.resourceItemTable)) {
+                    resourceItemTable = sharedData.resourceItemTable;
+                    localStorage.setItem(RESOURCE_ITEM_STORAGE_KEY, JSON.stringify(resourceItemTable));
+                    updateResourceSelect();
+                    updateResourceLabels();
+                    syncCount++;
+                    syncMessages.push(`物品表（${resourceItemTable.length}个）`);
+                    console.log('已同步物品表，共', resourceItemTable.length, '个');
+                } else {
+                    console.log('共享存储中没有物品表数据（可能是旧版本数据）');
+                }
+                
+                // 同步装备强化表
+                if (sharedData.equipSlotLevelTable && Array.isArray(sharedData.equipSlotLevelTable)) {
+                    equipSlotLevelTable = sharedData.equipSlotLevelTable;
+                    localStorage.setItem(EQUIP_SLOT_LEVEL_STORAGE_KEY, JSON.stringify(equipSlotLevelTable));
+                    // 检查并添加装备槽位强化玩法
+                    const hasEquipSlotEnhance = resourceConsumptionGameplayList.some(g => g.type === 'equipSlotEnhance');
+                    if (!hasEquipSlotEnhance && equipSlotLevelTable.length > 0) {
+                        const maxId = resourceConsumptionGameplayList.length > 0 
+                            ? Math.max(...resourceConsumptionGameplayList.map(g => g.id)) 
+                            : 0;
+                        resourceConsumptionGameplayList.push({
+                            id: maxId + 1,
+                            name: '装备槽位强化',
+                            itemName: '',
+                            type: 'equipSlotEnhance'
+                        });
+                        savePlayerEconomyData();
+                    }
+                    renderResourceGameplayList();
+                    renderMainConfigEquipSlotEnhancePanel();
+                    syncCount++;
+                    syncMessages.push(`装备强化表（${equipSlotLevelTable.length}条）`);
+                    console.log('已同步装备强化表，共', equipSlotLevelTable.length, '条');
+                } else {
+                    console.log('共享存储中没有装备强化表数据（可能是旧版本数据）');
+                }
+                
                 if (syncCount > 0) {
                     showMessage(`同步成功！已加载：${syncMessages.join('、')}`, 'success');
                     updateSharedStorageStatus('同步完成');
@@ -12134,6 +12174,10 @@
                     accountLevelTable: accountLevelTable,
                     // 玩家经济模拟方案
                     economySchemes: loadEconomySchemes(),
+                    // 物品表
+                    resourceItemTable: resourceItemTable,
+                    // 装备强化表
+                    equipSlotLevelTable: equipSlotLevelTable,
                     lastUpdate: new Date().toISOString(),
                     version: VERSION
                 };
