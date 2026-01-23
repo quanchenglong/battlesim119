@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.5';
+        const VERSION = '2.4.6';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -10780,7 +10780,10 @@
                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; min-width: 1000px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <div style="font-weight: 600; color: #333; font-size: 1.1em;">${gameplay.name}</div>
-                        <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-success" onclick="autoUpgradeEquipSlots()" style="padding: 6px 16px; font-size: 0.9em; background: #51cf66; color: white; font-weight: 600;">⚡ 一键强化</button>
+                            <button class="btn btn-danger" onclick="removeResourceGameplay(${gameplay.id})" style="padding: 4px 12px; font-size: 0.85em; background: #ff6b6b;">删除</button>
+                        </div>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
             `;
@@ -10955,6 +10958,128 @@
             if (attrs.def > 0) attrsText.push(`防御+${attrs.def}`);
             
             showMessage(`强化成功！${JOB_NAMES[jobId]}${typeName}部提升到${nextLevel}级（${attrsText.join('、')}）`, 'success');
+        };
+        
+        // 一键强化装备槽位（优先强化等级最低的部位，直到材料不足）
+        window.autoUpgradeEquipSlots = function() {
+            if (!equipSlotLevelTable || equipSlotLevelTable.length === 0) {
+                showMessage('请先上传装备表（包含EquipSlotLevel页签）', 'error');
+                return;
+            }
+            
+            const typeNames = { 1: '头', 2: '身', 3: '手', 4: '脚' };
+            const jobNames = { 1: '坦克', 2: '战士', 3: '射手', 4: '辅助' };
+            let totalUpgrades = 0;
+            const upgradeDetails = [];
+            
+            // 遍历4个职业
+            for (let jobId = 1; jobId <= 4; jobId++) {
+                let jobUpgrades = 0;
+                const jobUpgradeDetails = [];
+                
+                // 持续强化，直到该职业所有部位都无法强化
+                let canContinue = true;
+                let maxIterations = 100; // 防止无限循环
+                let iterations = 0;
+                
+                while (canContinue && iterations < maxIterations) {
+                    iterations++;
+                    canContinue = false;
+                    
+                    // 找到该职业等级最低的部位
+                    const slotLevels = [];
+                    for (let typeId = 1; typeId <= 4; typeId++) {
+                        const typeName = typeNames[typeId];
+                        const currentLevel = equipSlotLevels[jobId] && equipSlotLevels[jobId][typeName] ? equipSlotLevels[jobId][typeName] : 0;
+                        const nextLevel = currentLevel + 1;
+                        
+                        // 检查是否有下一级数据
+                        const nextLevelData = equipSlotLevelTable.find(row => 
+                            row.type === typeId && row.heroClasses === jobId && row.slotLevel === nextLevel
+                        );
+                        
+                        if (nextLevelData) {
+                            // 检查材料是否足够
+                            const canUpgrade = nextLevelData.costItems.every(cost => {
+                                const itemCount = getResourceCount(cost.resourceId);
+                                return itemCount >= cost.count;
+                            });
+                            
+                            if (canUpgrade) {
+                                slotLevels.push({ typeId, typeName, currentLevel, nextLevel, nextLevelData });
+                            }
+                        }
+                    }
+                    
+                    // 如果还有可以强化的部位，选择等级最低的
+                    if (slotLevels.length > 0) {
+                        // 按当前等级排序，等级最低的优先
+                        slotLevels.sort((a, b) => a.currentLevel - b.currentLevel);
+                        const target = slotLevels[0];
+                        
+                        // 执行强化
+                        const typeName = target.typeName;
+                        const nextLevel = target.nextLevel;
+                        const nextLevelData = target.nextLevelData;
+                        
+                        // 消耗材料
+                        for (const cost of nextLevelData.costItems) {
+                            const resourceIdStr = String(cost.resourceId);
+                            if (resourceIdStr === '1001') {
+                                playerResources.gold = (playerResources.gold || 0) - cost.count;
+                                syncEconomyGoldDisplay();
+                            } else if (resourceIdStr === '1002') {
+                                playerResources.diamond = (playerResources.diamond || 0) - cost.count;
+                                const diamondInput = document.getElementById('playerDiamond');
+                                if (diamondInput) diamondInput.value = playerResources.diamond;
+                            } else if (resourceIdStr === '1003') {
+                                playerResources.currentStamina = (playerResources.currentStamina || 0) - cost.count;
+                                const staminaInput = document.getElementById('playerCurrentStamina');
+                                if (staminaInput) staminaInput.value = playerResources.currentStamina;
+                            } else {
+                                const item = bagItems.find(i => i.resourceId === resourceIdStr);
+                                if (item) {
+                                    item.count -= cost.count;
+                                    if (item.count <= 0) {
+                                        bagItems = bagItems.filter(i => i.resourceId !== resourceIdStr);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 升级
+                        if (!equipSlotLevels[jobId]) equipSlotLevels[jobId] = {};
+                        equipSlotLevels[jobId][typeName] = nextLevel;
+                        
+                        jobUpgrades++;
+                        totalUpgrades++;
+                        canContinue = true;
+                        
+                        const attrs = nextLevelData.attribute;
+                        const attrsText = [];
+                        if (attrs.hp > 0) attrsText.push(`血量+${attrs.hp}`);
+                        if (attrs.atk > 0) attrsText.push(`攻击+${attrs.atk}`);
+                        if (attrs.def > 0) attrsText.push(`防御+${attrs.def}`);
+                        
+                        jobUpgradeDetails.push(`${typeName}部→${nextLevel}级(${attrsText.join('、')})`);
+                    }
+                }
+                
+                if (jobUpgrades > 0) {
+                    upgradeDetails.push(`${jobNames[jobId]}: ${jobUpgradeDetails.join('; ')}`);
+                }
+            }
+            
+            // 更新UI
+            renderBagItems();
+            renderResourceGameplayList();
+            savePlayerEconomyData();
+            
+            if (totalUpgrades > 0) {
+                showMessage(`一键强化完成！共强化${totalUpgrades}次\n${upgradeDetails.join('\n')}`, 'success');
+            } else {
+                showMessage('一键强化完成，但没有可强化的部位（材料不足或已满级）', 'info');
+            }
         };
         
         // 执行普通资源消耗玩法
