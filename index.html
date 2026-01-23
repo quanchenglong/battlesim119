@@ -1772,7 +1772,7 @@
 
     <script>
         // 版本号管理
-        const VERSION = '2.4.4';
+        const VERSION = '2.4.5';
         document.getElementById('version').textContent = VERSION;
         document.title = `战斗模拟器 v${VERSION}`;
 
@@ -11883,8 +11883,50 @@
                 
                 // 检查内容是否以完整的JSON结束
                 const trimmedContent = content.trim();
-                if (!trimmedContent.endsWith('}') && !trimmedContent.endsWith(']')) {
-                    throw new Error(`数据文件可能被截断：文件大小 ${sizeInMB} MB，但JSON格式不完整（未以}或]结尾）。\n\n可能原因：\n1. 文件超过GitHub Gist的1MB限制\n2. 数据在传输过程中被截断\n\n建议：\n1. 检查上传的数据大小\n2. 删除一些不必要的数据后重新上传`);
+                const isComplete = trimmedContent.endsWith('}') || trimmedContent.endsWith(']');
+                
+                if (!isComplete && parseFloat(sizeInMB) > 0.8) {
+                    // 尝试修复被截断的JSON（如果接近文件末尾）
+                    console.warn('检测到JSON可能被截断，尝试修复...');
+                    let fixedContent = trimmedContent;
+                    
+                    // 尝试找到最后一个完整的对象或数组
+                    let lastBrace = fixedContent.lastIndexOf('}');
+                    let lastBracket = fixedContent.lastIndexOf(']');
+                    let lastComplete = Math.max(lastBrace, lastBracket);
+                    
+                    if (lastComplete > fixedContent.length * 0.9) {
+                        // 如果最后一个完整字符在90%之后，尝试补全
+                        if (lastBrace > lastBracket) {
+                            // 可能是对象被截断
+                            fixedContent = fixedContent.substring(0, lastBrace + 1);
+                            // 尝试补全外层的闭合
+                            let openBraces = (fixedContent.match(/\{/g) || []).length;
+                            let closeBraces = (fixedContent.match(/\}/g) || []).length;
+                            if (openBraces > closeBraces) {
+                                fixedContent += '}'.repeat(openBraces - closeBraces);
+                            }
+                        } else {
+                            // 可能是数组被截断
+                            fixedContent = fixedContent.substring(0, lastBracket + 1);
+                            // 尝试补全外层的闭合
+                            let openBrackets = (fixedContent.match(/\[/g) || []).length;
+                            let closeBrackets = (fixedContent.match(/\]/g) || []).length;
+                            if (openBrackets > closeBrackets) {
+                                fixedContent += ']'.repeat(openBrackets - closeBrackets);
+                            }
+                        }
+                        
+                        console.log('尝试使用修复后的JSON...');
+                        try {
+                            const parsedData = JSON.parse(fixedContent);
+                            console.log('成功解析修复后的JSON数据，字段:', Object.keys(parsedData));
+                            showMessage('警告：数据文件可能被部分截断，已尝试修复。建议重新上传完整数据。', 'warning');
+                            return parsedData;
+                        } catch (fixError) {
+                            console.warn('修复失败，继续使用原始内容尝试解析');
+                        }
+                    }
                 }
                 
                 try {
@@ -11905,7 +11947,9 @@
                         const lines = content.split('\n');
                         const lineContent = lines[line - 1] || '';
                         const beforeError = lineContent.substring(0, Math.min(col - 1, 50));
-                        detailedError += `\n\n错误位置：第${line}行，第${col}列\n附近内容：${beforeError}...\n\n文件大小：${sizeInMB} MB\n\n可能原因：\n1. 文件超过GitHub Gist的1MB限制，数据被截断\n2. JSON格式错误\n\n建议：\n1. 检查上传的数据大小\n2. 如果文件太大，删除一些不必要的数据后重新上传`;
+                        detailedError += `\n\n错误位置：第${line}行，第${col}列\n附近内容：${beforeError}...\n\n文件大小：${sizeInMB} MB\n\n可能原因：\n1. 文件超过GitHub Gist的1MB限制，数据被截断\n2. JSON格式错误\n\n建议：\n1. 检查上传的数据大小\n2. 如果文件太大，删除一些不必要的数据后重新上传\n3. 尝试清理经济方案中的旧数据`;
+                    } else if (!isComplete) {
+                        detailedError += `\n\n文件大小：${sizeInMB} MB\n文件未以}或]结尾，可能被截断\n\n建议：\n1. 重新上传数据（使用紧凑格式）\n2. 删除一些不必要的数据（如旧方案、测试数据）\n3. 清理经济方案中不需要的数据`;
                     }
                     throw new Error(detailedError);
                 }
@@ -11923,13 +11967,13 @@
         // 写入数据到GitHub Gist（需要Personal Access Token）
         async function writeToGist(gistId, data, token) {
             try {
-                // 检查数据大小（GitHub Gist单个文件限制约1MB）
-                const jsonString = JSON.stringify(data, null, 2);
+                // 使用紧凑格式（无缩进）来减小文件大小
+                const jsonString = JSON.stringify(data);
                 const sizeInMB = (new Blob([jsonString]).size / 1024 / 1024).toFixed(2);
-                console.log('准备上传的数据大小:', sizeInMB, 'MB');
+                console.log('准备上传的数据大小:', sizeInMB, 'MB (紧凑格式)');
                 
-                if (parseFloat(sizeInMB) > 0.9) {
-                    const confirm = window.confirm(`警告：数据大小 ${sizeInMB} MB，接近GitHub Gist的1MB限制。\n\n如果上传失败，建议：\n1. 删除一些不必要的数据\n2. 使用压缩格式（当前未压缩）\n\n是否继续上传？`);
+                if (parseFloat(sizeInMB) > 0.95) {
+                    const confirm = window.confirm(`警告：数据大小 ${sizeInMB} MB，非常接近GitHub Gist的1MB限制。\n\n如果上传失败，建议：\n1. 删除一些不必要的数据（如旧的方案、测试数据等）\n2. 清理经济方案中不需要的数据\n\n是否继续上传？`);
                     if (!confirm) {
                         throw new Error('用户取消上传');
                     }
